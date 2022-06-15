@@ -1,0 +1,7 @@
+mesh: "/example/scene/dae/Defold_Material_Model.dae"
+material: "/dfp/assets/materials/dfp_model_lambert.material"
+textures: "/example/scene/textures/Defold_Material_Prop_Basic_Bake_Blue.png"
+skeleton: ""
+animations: ""
+default_animation: ""
+name: "unnamed"

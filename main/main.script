@@ -1,4 +1,0 @@
-
-function init(self)
-	collectionfactory.create("#dfp_bootstrap")
-end
