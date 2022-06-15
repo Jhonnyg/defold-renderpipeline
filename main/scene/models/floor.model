@@ -1,0 +1,7 @@
+mesh: "/main/scene/dae/floor.dae"
+material: "/dfp/assets/materials/dfp_model_lambert.material"
+textures: "/main/scene/textures/Defold_Prop_Floor_Basic_Bake.png"
+skeleton: ""
+animations: ""
+default_animation: ""
+name: "unnamed"

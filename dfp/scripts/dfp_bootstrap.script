@@ -1,0 +1,8 @@
+local dfp = require 'dfp.api'
+
+function init(self)
+end
+
+function update(self, dt)
+	dfp.update()
+end

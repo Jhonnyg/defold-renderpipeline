@@ -1,0 +1,8 @@
+local dfp = require 'dfp.api'
+
+go.property("main_light", false)
+go.property("vertex_light", false)
+
+function init(self)
+	dfp.__register_light(go.get_id())
+end

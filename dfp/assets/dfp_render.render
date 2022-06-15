@@ -1,0 +1,5 @@
+script: "/dfp/scripts/dfp_render.render_script"
+materials {
+  name: "dfp_pass_shadow"
+  material: "/dfp/assets/materials/dfp_pass_shadow.material"
+}
