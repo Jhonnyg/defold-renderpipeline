@@ -30,9 +30,9 @@ local function rebuild_assets()
 end
 
 local function rebuild_graph()
-	local node_root = dfp_graph.node()
-	local node_shadow = dfp_graph.node()
-	local node_lighting = dfp_graph.node()
+	local node_root           = dfp_graph.node()
+	local node_shadow         = dfp_graph.node()
+	local node_lighting       = dfp_graph.node()
 	local node_postprocessing = dfp_graph.node()
 
 	if dfp_state.config[dfp_constants.config_keys.SHADOWS] then
@@ -94,6 +94,8 @@ api.configure = function(tbl)
 	rebuild_graph()
 end
 
+-- This must be called from a script component somewhere in a collection
+-- TODO: Figure out how to deal with dfp components that live in other collections..
 api.update = function()
 	dfp_state.render_data = {}
 	dfp_state.render_data.cameras = {}
@@ -145,11 +147,15 @@ api.update = function()
 	end
 end
 
+
+-- This must be called from a render script
 api.render = function()
 	if not dfp_state.render_init then
 		init_render()
 	end
 
+	-- todo: we shouldn't do all passes for all cameras as 
+	--       the shadow map(s) are not based on cameras but on lights
 	for k, v in pairs(dfp_state.render_data.cameras) do
 		dfp_graph.execute(dfp_state.render_graph, dfp_state.render_data, v)
 	end
