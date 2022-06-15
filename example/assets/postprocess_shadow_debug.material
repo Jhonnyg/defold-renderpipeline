@@ -1,0 +1,5 @@
+name: "postprocess_shadow_debug"
+tags: "postprocess_shadow_debug"
+vertex_program: "/example/assets/postprocess_shadow_debug.vp"
+fragment_program: "/example/assets/postprocess_shadow_debug.fp"
+vertex_space: VERTEX_SPACE_WORLD

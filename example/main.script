@@ -1,3 +1,13 @@
+local dfp = require 'dfp.api'
 
 function init(self)
+	dfp.configure({
+		[dfp.config.POST_PROCESSING] = true
+	})
+
+	dfp.add_postprocessing({
+		predicate = "postprocess_shadow_debug",
+		material = "postprocess_shadow_debug",
+		after = dfp.node_keys.POSTPROCESSING
+	})
 end

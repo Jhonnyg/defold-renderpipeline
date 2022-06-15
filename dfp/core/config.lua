@@ -9,6 +9,7 @@ config.default = function()
 		[dfp_constants.config_keys.LIGHTING_MAX_VERTEX_LIGHTS]   = 4,
 		[dfp_constants.config_keys.SHADOWS]                      = true,
 		[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]      = 1024,
+		[dfp_constants.config_keys.POST_PROCESSING]      		 = false,
 	}
 end
 

@@ -53,20 +53,67 @@ vertex_constants {
     w: 1.0
   }
 }
-fragment_constants {
-  name: "tint"
+vertex_constants {
+  name: "mtx_world"
+  type: CONSTANT_TYPE_WORLD
+  value {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+}
+vertex_constants {
+  name: " mtx_light_mvp0"
   type: CONSTANT_TYPE_USER
   value {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+}
+vertex_constants {
+  name: " mtx_light_mvp1"
+  type: CONSTANT_TYPE_USER
+  value {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+}
+vertex_constants {
+  name: " mtx_light_mvp2"
+  type: CONSTANT_TYPE_USER
+  value {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+}
+vertex_constants {
+  name: " mtx_light_mvp3"
+  type: CONSTANT_TYPE_USER
+  value {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
   }
 }
 samplers {
   name: "tex0"
-  wrap_u: WRAP_MODE_REPEAT
-  wrap_v: WRAP_MODE_REPEAT
-  filter_min: FILTER_MODE_MIN_LINEAR
-  filter_mag: FILTER_MODE_MAG_LINEAR
+  wrap_u: WRAP_MODE_CLAMP_TO_EDGE
+  wrap_v: WRAP_MODE_CLAMP_TO_EDGE
+  filter_min: FILTER_MODE_MIN_NEAREST
+  filter_mag: FILTER_MODE_MAG_NEAREST
+}
+samplers {
+  name: "tex_depth"
+  wrap_u: WRAP_MODE_CLAMP_TO_EDGE
+  wrap_v: WRAP_MODE_CLAMP_TO_EDGE
+  filter_min: FILTER_MODE_MIN_NEAREST
+  filter_mag: FILTER_MODE_MAG_NEAREST
 }

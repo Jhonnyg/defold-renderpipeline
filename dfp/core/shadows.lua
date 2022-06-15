@@ -1,3 +1,5 @@
+local dfp_helpers = require 'dfp.core.helpers'
+
 local shadows = {}
 
 shadows.make_target = function(w, h)
@@ -27,30 +29,14 @@ shadows.make_target = function(w, h)
 	})
 end
 
-local function get_rotation_from_yaw_pitch(yaw,pitch)
-	return vmath.quat_rotation_x(math.rad(pitch)) * vmath.quat_rotation_y(math.rad(yaw))
-end
-
 shadows.pass = function(node, render_data, camera)
-	local main_light = nil
-
-	for k, v in pairs(render_data.lights) do
-		if v.is_main_light then
-			main_light = v
-			break
-		end
-	end
-
+	local main_light = dfp_helpers.get_main_light(render_data)
 	if main_light == nil then
 		return
 	end
 
-	local light_rotation_quat = get_rotation_from_yaw_pitch(main_light.rotation.x, main_light.rotation.y)
-	local light_mtx_view  = vmath.matrix4_from_quat(light_rotation_quat)
-
-	local proj_w = 50
-	local proj_h = 50
-	local light_mtx_projection = vmath.matrix4_orthographic(-proj_w/2, proj_w/2, -proj_h/2, proj_h/2, 0.1, 60)
+	local light_mtx_view = dfp_helpers.get_view_matrix_from_light(main_light)
+	local light_mtx_projection = dfp_helpers.get_projection_matrix_from_light(main_light)
 
 	local viewport_w = render.get_render_target_width(node.target, render.BUFFER_DEPTH_BIT)
 	local viewport_h = render.get_render_target_height(node.target, render.BUFFER_DEPTH_BIT)

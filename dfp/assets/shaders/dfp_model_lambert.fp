@@ -1,23 +1,51 @@
-varying highp vec4 var_position;
+varying mediump vec4 var_position;
+varying mediump vec4 var_position_world;
 varying mediump vec3 var_normal;
 varying mediump vec2 var_texcoord0;
+varying mediump vec4 var_texcoord0_shadow;
 varying mediump vec4 var_light;
 
 uniform lowp sampler2D tex0;
-uniform lowp vec4 tint;
+uniform lowp sampler2D tex_depth;
+
+float rgba_to_float(vec4 rgba)
+{
+    return dot(rgba, vec4(1.0, 1.0/255.0, 1.0/65025.0, 1.0/16581375.0));
+}
+
+float get_visibility()
+{
+    vec4 depth_data        = var_texcoord0_shadow / var_texcoord0_shadow.w;
+    float depth            = rgba_to_float(texture2D(tex_depth, depth_data.st));
+    const float depth_bias = 0.002;
+    // const float depth_bias = 0.00002; // for perspective camera
+
+    // The 'depth_bias' value is per-scene dependant and must be tweaked accordingly.
+    // It is needed to avoid shadow acne, which is basically a precision issue.
+    if (depth < depth_data.z - depth_bias)
+    {
+        return 0.5;
+    }
+
+    return 1.0;
+}
+
+vec3 get_light_color()
+{
+    // Diffuse light calculations
+    vec3 ambient_light = vec3(0.2);
+    vec3 diff_light    = vec3(normalize(var_light.xyz - var_position.xyz));
+    diff_light         = max(dot(var_normal, diff_light), 0.0) + ambient_light;
+    diff_light         = clamp(diff_light, 0.0, 1.0);
+    return diff_light;
+}
 
 void main()
 {
-    // Pre-multiply alpha since all runtime textures already are
-    vec4 tint_pm = vec4(tint.xyz * tint.w, tint.w);
-    vec4 color = texture2D(tex0, var_texcoord0.xy) * tint_pm;
-
-    // Diffuse light calculations
-    vec3 ambient_light = vec3(0.2);
-    vec3 diff_light = vec3(normalize(var_light.xyz - var_position.xyz));
-    diff_light = max(dot(var_normal,diff_light), 0.0) + ambient_light;
-    diff_light = clamp(diff_light, 0.0, 1.0);
-
-    gl_FragColor = vec4(color.rgb*diff_light,1.0);
+    vec4 albedo       = texture2D(tex0, var_texcoord0.xy);
+    float occlusion   = get_visibility();
+    vec3 light0_color = get_light_color();
+    vec3 final_color  = albedo.rgb * light0_color * occlusion;
+    gl_FragColor      = vec4(final_color, 1.0);
 }
 

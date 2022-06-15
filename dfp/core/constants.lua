@@ -1,7 +1,11 @@
 local constants = {}
 
-constants.PROPERTY_MAIN_LIGHT   = "main_light"
-constants.PROPERTY_VERTEX_LIGHT = "vertex_light"
+constants.PROPERTY_MAIN_LIGHT           = "main_light"
+constants.PROPERTY_VERTEX_LIGHT         = "vertex_light"
+
+constants.PROPERTY_LIGHT_FRUSTUM_SIZE   = "light_frustum_size"
+constants.PROPERTY_LIGHT_FRUSTUM_NEAR   = "light_frustum_near"
+constants.PROPERTY_LIGHT_FRUSTUM_FAR    = "light_frustum_far"
 
 constants.PROPERTY_CAMERA_FOV           = "camera_fov"
 constants.PROPERTY_CAMERA_NEAR          = "camera_near"
@@ -21,11 +25,19 @@ constants.config_keys = {
 	-- Shadows
 	SHADOWS                      = 4,
 	SHADOWS_SHADOW_MAP_SIZE      = 5,
+	-- Post processing
+	POST_PROCESSING              = 6,
+}
+
+constants.node_keys = {
+	SHADOWS        = "node_shadows",
+	LIGHTING       = "node_lighting",
+	POSTPROCESSING = "node_postprocessing"
 }
 
 constants.material_keys = {
-	SHADOW_PASS = "dfp_pass_shadow", -- move to constants
-	SCENE_PASS = "dfp_pass_scene",
+	SHADOW_PASS = "dfp_pass_shadow",
+	SCENE_PASS  = "dfp_pass_scene",
 }
 
 return constants

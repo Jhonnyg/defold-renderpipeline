@@ -3,6 +3,10 @@ local dfp = require 'dfp.api'
 go.property("main_light", false)
 go.property("vertex_light", false)
 
+go.property("light_frustum_size", 50)
+go.property("light_frustum_near", 0.1)
+go.property("light_frustum_far", 60)
+
 function init(self)
 	dfp.__register_light(go.get_id())
 end
