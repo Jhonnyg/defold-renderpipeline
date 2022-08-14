@@ -16,18 +16,22 @@ float rgba_to_float(vec4 rgba)
 float get_visibility()
 {
     vec4 depth_data        = var_texcoord0_shadow / var_texcoord0_shadow.w;
-    float depth            = rgba_to_float(texture2D(tex_depth, depth_data.st));
     const float depth_bias = 0.002;
     // const float depth_bias = 0.00002; // for perspective camera
 
-    // The 'depth_bias' value is per-scene dependant and must be tweaked accordingly.
-    // It is needed to avoid shadow acne, which is basically a precision issue.
-    if (depth < depth_data.z - depth_bias)
+    float shadow = 0.0;
+    vec2 texel_size = 1.0 / textureSize(tex_depth, 0);
+    for (int x = -1; x <= 1; ++x)
     {
-        return 0.5;
+        for (int y = -1; y <= 1; ++y)
+        {
+            float depth = rgba_to_float(texture2D(tex_depth, depth_data.st + vec2(x,y) * texel_size));
+            shadow += depth_data.z - depth_bias > depth ? 0.8 : 0.0;
+        }
     }
+    shadow /= 9.0;
 
-    return 1.0;
+    return 1.0 - shadow;
 }
 
 vec3 get_light_color()
@@ -45,7 +49,7 @@ void main()
     vec4 albedo       = texture2D(tex0, var_texcoord0.xy);
     float occlusion   = get_visibility();
     vec3 light0_color = get_light_color();
-    vec3 final_color  = albedo.rgb * light0_color * occlusion;
+    vec3 final_color  = albedo.rgb * light0_color  * occlusion;
     gl_FragColor      = vec4(final_color, 1.0);
 }
 

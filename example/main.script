@@ -2,12 +2,25 @@ local dfp = require 'dfp.api'
 
 function init(self)
 	dfp.configure({
-		[dfp.config.POST_PROCESSING] = true
+		[dfp.config.POST_PROCESSING]         = false,
+		[dfp.config.SHADOWS]                 = true,
+		[dfp.config.SHADOWS_SHADOW_MAP_SIZE] = 2048
 	})
 
-	dfp.add_postprocessing({
-		predicate = "postprocess_shadow_debug",
-		material = "postprocess_shadow_debug",
-		after = dfp.node_keys.POSTPROCESSING
+	dfp.add_custom_pass({
+		predicate = {"postprocess_shadow_debug"},
+		material  = "postprocess_shadow_debug",
+		after     = dfp.node_keys.POSTPROCESSING,
+		textures  = {
+			dfp.node_keys.SHADOWS
+		}
 	})
+end
+
+function update(self, dt)
+	dfp.update()
+end
+
+function on_reload(self)
+	dfp.on_reload()
 end

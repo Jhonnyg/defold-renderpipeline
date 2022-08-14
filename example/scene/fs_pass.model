@@ -1,0 +1,6 @@
+mesh: "/builtins/assets/meshes/quad_2x2.dae"
+material: "/example/assets/postprocess_shadow_debug.material"
+skeleton: ""
+animations: ""
+default_animation: ""
+name: "unnamed"

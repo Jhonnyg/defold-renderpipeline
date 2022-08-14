@@ -1,0 +1,9 @@
+script: "/dfp/scripts/dfp_render.render_script"
+materials {
+  name: "dfp_pass_shadow"
+  material: "/dfp/assets/materials/dfp_pass_shadow.material"
+}
+materials {
+  name: "postprocess_shadow_debug"
+  material: "/example/assets/postprocess_shadow_debug.material"
+}

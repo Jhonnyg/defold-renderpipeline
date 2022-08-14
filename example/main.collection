@@ -3,15 +3,15 @@ instances {
   id: "main_light"
   prototype: "/dfp/objects/dfp_light.go"
   position {
-    x: 0.0
-    y: 0.0
-    z: 0.0
+    x: -10.421
+    y: 43.651
+    z: 22.402
   }
   rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
+    x: -0.42514542
+    y: -0.2324008
+    z: -0.113917366
+    w: 0.86733156
   }
   component_properties {
     id: "dfp_light"
@@ -19,6 +19,16 @@ instances {
       id: "main_light"
       value: "true"
       type: PROPERTY_TYPE_BOOLEAN
+    }
+    properties {
+      id: "light_frustum_size"
+      value: "90.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+    properties {
+      id: "light_frustum_far"
+      value: "500.0"
+      type: PROPERTY_TYPE_NUMBER
     }
   }
   scale3 {
@@ -31,15 +41,15 @@ instances {
   id: "dfp_camera"
   prototype: "/dfp/objects/dfp_camera.go"
   position {
-    x: 0.0
-    y: 0.0
-    z: 0.0
+    x: 1.745
+    y: 6.623
+    z: 19.135
   }
   rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
+    x: -0.12993546
+    y: 3.5182847E-17
+    z: -9.376409E-17
+    w: 0.99152243
   }
   component_properties {
     id: "dfp_camera"
@@ -251,6 +261,21 @@ embedded_instances {
   data: "components {\n"
   "  id: \"main\"\n"
   "  component: \"/example/main.script\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "}\n"
+  "components {\n"
+  "  id: \"fs_pass\"\n"
+  "  component: \"/example/scene/fs_pass.model\"\n"
   "  position {\n"
   "    x: 0.0\n"
   "    y: 0.0\n"

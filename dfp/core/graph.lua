@@ -25,10 +25,10 @@ graph.set_output = function(node, node_output)
 	node.output = node_output
 end
 
-graph.execute = function(node, render_data, camera)
-	node.execute(node, render_data, camera)
+graph.execute = function(node, parent, render_data, camera)
+	node.execute(node, parent, render_data, camera)
 	if node.output ~= nil then
-		graph.execute(node.output, render_data, camera)
+		graph.execute(node.output, node, render_data, camera)
 	end
 end
 

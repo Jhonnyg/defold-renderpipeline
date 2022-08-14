@@ -29,7 +29,7 @@ lighting.make_target = function(w, h)
 	})
 end
 
-lighting.pass = function(node, render_data, camera)
+lighting.pass = function(node, parent, render_data, camera)
 
 	local window_w = render.get_window_width()
 	local window_h = render.get_window_height()
@@ -70,7 +70,9 @@ lighting.pass = function(node, render_data, camera)
 	render.set_projection(camera_proj)
 	render.set_viewport(viewport.x, viewport.y, viewport.z, viewport.w)
 
-	render.enable_texture(1, node.shadow_buffer, render.BUFFER_COLOR_BIT)
+	if node.shadow_buffer ~= nil then
+		render.enable_texture(1, node.shadow_buffer, render.BUFFER_COLOR_BIT)
+	end
 
 	if camera.clear then
 		render.clear({
@@ -82,7 +84,10 @@ lighting.pass = function(node, render_data, camera)
 	if node.target ~= nil then
 		render.set_render_target(node.target)
 	end
+
 	render.draw(node.predicates, { constants = node.constant_buffer })
+
+	render.disable_texture(1)
 end
 
 return lighting

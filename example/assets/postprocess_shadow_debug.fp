@@ -3,5 +3,6 @@ uniform lowp sampler2D texture_sampler;
 
 void main()
 {
-    gl_FragColor = texture2D(texture_sampler, var_texcoord0.xy);
+    float depth = texture2D(texture_sampler, var_texcoord0.xy).r;
+    gl_FragColor = vec4(vec3(depth), 1.0);
 }

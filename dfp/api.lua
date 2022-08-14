@@ -12,6 +12,7 @@ local dfp_state = {
 	render_targets    = {},
 	render_data       = { cameras = {}, lights = {} },
 	render_predicates = {},
+	custom_passes     = {},
 	config            = dfp_config.default(),
 	lights            = {},
 	cameras           = {},
@@ -63,6 +64,19 @@ local function resize_assets()
 	end
 end
 
+local function get_node(root, node_key)
+	if root == nil then
+		return nil
+	end
+	local node = root
+	repeat
+		if node.name == node_key then
+			return node
+		end
+		node = node.output
+	until node.output == nil
+end
+
 local function rebuild_graph()
 	local node_root           = dfp_graph.node(nil, dfp_constants.node_keys.ROOT)
 	local node_shadow         = dfp_graph.node()
@@ -93,12 +107,37 @@ local function rebuild_graph()
 	end
 
 	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] then
-		node_postprocessing = dfp_graph.node(dfp_postprocessing.pass, dfp_constants.node_keys.POSTPROCESSING)
+		node_postprocessing        = dfp_graph.node(nil, dfp_constants.node_keys.POSTPROCESSING)
+		node_postprocessing.target = node_lighting.target
 	end
 
 	dfp_graph.set_output(node_root, node_shadow)
 	dfp_graph.set_output(node_shadow, node_lighting)
 	dfp_graph.set_output(node_lighting, node_postprocessing)
+	
+	-- Hook up custom passes after core graph has been built
+	for k, v in pairs(dfp_state.custom_passes) do
+		local desc = dfp_state.custom_passes[k]
+		local node_custom_pass = dfp_graph.node(dfp_postprocessing.pass, "custom_pass_" .. k)
+
+		node_custom_pass.material = v.material
+		node_custom_pass.predicate = render.predicate(v.predicate)
+
+		if v.textures ~= nil then
+			node_custom_pass.textures = {}
+			for _, tex_key in pairs(v.textures) do
+				local tex_node = get_node(node_root, tex_key)
+				table.insert(node_custom_pass.textures, tex_node.target)
+			end
+		end
+
+		local after_node = get_node(note_root, desc["after"])
+		if after_node ~= nil then
+			local old_output = after_node.output
+			dfp_graph.set_output(after_node, node_custom_pass)
+			dfp_graph.set_output(node_custom_pass, old_output)
+		end
+	end
 
 	dfp_state.render_graph = node_root
 end
@@ -125,7 +164,7 @@ api.__register_camera = function(cmp)
 end
 
 api.node_keys = dfp_constants.node_keys
-api.config = dfp_constants.config_keys
+api.config    = dfp_constants.config_keys
 
 api.configure = function(tbl)
 	local configuration_changed = false
@@ -157,8 +196,11 @@ api.update = function()
 		local c_clear_c  = go.get(c_url, dfp_constants.PROPERTY_CAMERA_CLEAR_COLOR)
 		local c_clear_d  = go.get(c_url, dfp_constants.PROPERTY_CAMERA_CLEAR_DEPTH)
 		local c_clear_s  = go.get(c_url, dfp_constants.PROPERTY_CAMERA_CLEAR_STENCIL)
-		local c_eye      = vmath.vector3(0, 10, 20)
-		local c_look_at  = vmath.vector3(0, 0, 0)
+		local c_pos      = go.get_world_position(v)
+		local c_rot      = go.get_world_rotation(v)
+		
+		local c_eye      = c_pos
+		local c_look_at  = c_pos + vmath.vector3(0, 0, 1)
 		local c_up       = vmath.vector3(0, 1, 0)
 
 		c.viewport      = c_viewport
@@ -169,7 +211,7 @@ api.update = function()
 		c.fov           = c_fov
 		c.near          = c_near
 		c.far           = c_far
-		c.view          = vmath.matrix4_look_at(c_eye, c_look_at, c_up)
+		c.view          = vmath.inv(vmath.matrix4_from_quat(c_rot) * vmath.matrix4_translation(c_pos)) 
 		c.projection    = vmath.matrix4()
 
 		table.insert(dfp_state.render_data.cameras, c)
@@ -202,7 +244,16 @@ api.update = function()
 	end
 end
 
-api.add_postprocessing = function(desc)
+api.add_custom_pass = function(desc)
+	table.insert(dfp_state.custom_passes, desc)
+end
+
+api.get_node = function(node_key)
+	return get_node(dfp_state.render_graph, node_key)
+end
+
+api.on_reload = function()
+	dfp_state.config_dirty = true
 end
 
 -- This must be called from a render script
@@ -222,7 +273,7 @@ api.render = function()
 	-- todo: we shouldn't do all passes for all cameras as 
 	--       the shadow map(s) are not based on cameras but on lights
 	for k, v in pairs(dfp_state.render_data.cameras) do
-		dfp_graph.execute(dfp_state.render_graph, dfp_state.render_data, v)
+		dfp_graph.execute(dfp_state.render_graph, nil, dfp_state.render_data, v)
 	end
 end
 

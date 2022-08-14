@@ -4,7 +4,7 @@ local shadows = {}
 
 shadows.make_target = function(w, h)
 	local color_params = {
-		format     = render.FORMAT_RGBA,
+		format     = render.FORMAT_R32F,
 		width      = w,
 		height     = h,
 		min_filter = render.FILTER_NEAREST,
@@ -29,7 +29,7 @@ shadows.make_target = function(w, h)
 	})
 end
 
-shadows.pass = function(node, render_data, camera)
+shadows.pass = function(node, parent, render_data, camera)
 	local main_light = dfp_helpers.get_main_light(render_data)
 	if main_light == nil then
 		return
