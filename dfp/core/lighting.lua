@@ -1,14 +1,21 @@
-local dfp_helpers = require 'dfp.core.helpers'
+local dfp_helpers   = require 'dfp.core.helpers'
+local dfp_constants = require 'dfp.core.constants'
 
 local lighting = {}
 
-lighting.make_target = function(w, h)
+lighting.make_target = function(w, h, dfp_config)
+	local color_fmt = render.FORMAT_RGBA
+
+	if dfp_config[dfp_constants.config_keys.LIGHTING_HDR] then
+		color_fmt = render.FORMAT_RGBA32F
+	end
+	
 	local color_params = {
 		format     = render.FORMAT_RGBA,
 		width      = w,
 		height     = h,
-		min_filter = render.FILTER_NEAREST,
-		mag_filter = render.FILTER_NEAREST,
+		min_filter = render.FILTER_LINEAR,
+		mag_filter = render.FILTER_LINEAR,
 		u_wrap     = render.WRAP_CLAMP_TO_EDGE,
 		v_wrap     = render.WRAP_CLAMP_TO_EDGE
 	}
@@ -74,6 +81,10 @@ lighting.pass = function(node, parent, render_data, camera)
 		render.enable_texture(1, node.shadow_buffer, render.BUFFER_COLOR_BIT)
 	end
 
+	if node.target ~= nil then
+		render.set_render_target(node.target)
+	end
+	
 	if camera.clear then
 		render.clear({
 			[render.BUFFER_COLOR_BIT]   = camera.clear_color,
@@ -81,13 +92,27 @@ lighting.pass = function(node, parent, render_data, camera)
 			[render.BUFFER_STENCIL_BIT] = camera.clear_stencil})
 	end
 
-	if node.target ~= nil then
-		render.set_render_target(node.target)
-	end
-
 	render.draw(node.predicates, { constants = node.constant_buffer })
-
 	render.disable_texture(1)
+
+	if node.target ~= nil then
+		render.set_render_target(render.RENDER_TARGET_DEFAULT)
+	end
+end
+
+lighting.pass_hdr = function(node, parent, render_data, camera)
+	render.disable_state(render.STATE_BLEND)
+	render.disable_state(render.STATE_CULL_FACE)
+	render.disable_state(render.STATE_DEPTH_TEST)
+	render.set_depth_mask(false)
+
+	--pprint(parent.target)
+
+	--render.enable_material(node.material)
+	render.enable_texture(0, parent.target, render.BUFFER_COLOR_BIT)
+	render.draw(node.predicates, { constants = node.constant_buffer })
+	render.disable_texture(0)
+	--render.disable_material()
 end
 
 return lighting

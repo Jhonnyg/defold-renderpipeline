@@ -2,12 +2,14 @@ local dfp = require 'dfp.api'
 
 function init(self)
 	dfp.configure({
+		[dfp.config.LIGHTING_HDR]            = true,
 		[dfp.config.POST_PROCESSING]         = false,
 		[dfp.config.SHADOWS]                 = true,
 		[dfp.config.SHADOWS_SHADOW_MAP_SIZE] = 2048
 	})
 
-	dfp.add_custom_pass({
+	--[[
+	self.pass_shadows_debug = dfp.add_custom_pass({
 		predicate = {"postprocess_shadow_debug"},
 		material  = "postprocess_shadow_debug",
 		after     = dfp.node_keys.POSTPROCESSING,
@@ -15,9 +17,11 @@ function init(self)
 			dfp.node_keys.SHADOWS
 		}
 	})
+	--]]
 end
 
 function update(self, dt)
+	dfp.disable_pass(self.pass_shadows_debug)
 	dfp.update()
 end
 

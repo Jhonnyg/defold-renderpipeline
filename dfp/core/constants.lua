@@ -22,22 +22,26 @@ constants.config_keys = {
 	LIGHTING                     = 1,
 	LIGHTING_MAX_FRAGMENT_LIGHTS = 2,
 	LIGHTING_MAX_VERTEX_LIGHTS   = 3,
+	LIGHTING_HDR                 = 4,
 	-- Shadows
-	SHADOWS                      = 4,
-	SHADOWS_SHADOW_MAP_SIZE      = 5,
+	SHADOWS                      = 5,
+	SHADOWS_SHADOW_MAP_SIZE      = 6,
 	-- Post processing
-	POST_PROCESSING              = 6,
+	POST_PROCESSING              = 7,
 }
 
 constants.node_keys = {
+	ROOT           = "node_root",
 	SHADOWS        = "node_shadows",
 	LIGHTING       = "node_lighting",
+	LIGHTING_HDR   = "node_lighting_hdr",
 	POSTPROCESSING = "node_postprocessing"
 }
 
 constants.material_keys = {
-	SHADOW_PASS = "dfp_pass_shadow",
-	SCENE_PASS  = "dfp_pass_scene",
+	SHADOW_PASS      = "dfp_pass_shadow",
+	SCENE_PASS       = "dfp_pass_scene",
+	TONEMAPPING_PASS = "dfp_pass_tonemapping",
 }
 
 return constants

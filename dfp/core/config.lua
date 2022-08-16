@@ -7,6 +7,7 @@ config.default = function()
 		[dfp_constants.config_keys.LIGHTING]                     = true,
 		[dfp_constants.config_keys.LIGHTING_MAX_FRAGMENT_LIGHTS] = 2,
 		[dfp_constants.config_keys.LIGHTING_MAX_VERTEX_LIGHTS]   = 4,
+		[dfp_constants.config_keys.LIGHTING_HDR]      		 	 = false,
 		[dfp_constants.config_keys.SHADOWS]                      = true,
 		[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]      = 1024,
 		[dfp_constants.config_keys.POST_PROCESSING]      		 = false,

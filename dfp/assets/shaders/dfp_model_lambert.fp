@@ -39,17 +39,25 @@ vec3 get_light_color()
     // Diffuse light calculations
     vec3 ambient_light = vec3(0.2);
     vec3 diff_light    = vec3(normalize(var_light.xyz - var_position.xyz));
-    diff_light         = max(dot(var_normal, diff_light), 0.0) + ambient_light;
-    diff_light         = clamp(diff_light, 0.0, 1.0);
+    diff_light         = vec3(max(dot(var_normal, diff_light), 0.0)); //  * vec3(249.0/255.0, 255/255.0, 82/255.0);
+    diff_light         = diff_light + ambient_light;
+    //diff_light         = clamp(diff_light, 0.0, 1.0);
+    
     return diff_light;
+}
+
+vec3 gamma_correct(vec3 color)
+{
+    float gamma = 2.2;
+    return pow(color.rgb, vec3(1.0/gamma));
 }
 
 void main()
 {
-    vec4 albedo       = texture2D(tex0, var_texcoord0.xy);
+    vec3 albedo       = texture2D(tex0, var_texcoord0.xy).rgb;
     float occlusion   = get_visibility();
     vec3 light0_color = get_light_color();
-    vec3 final_color  = albedo.rgb * light0_color  * occlusion;
+    vec3 final_color  = gamma_correct(albedo.rgb * light0_color  * occlusion);
     gl_FragColor      = vec4(final_color, 1.0);
 }
 

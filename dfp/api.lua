@@ -23,7 +23,7 @@ local function rebuild_assets()
 		local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
 		if dfp_state.render_targets["shadow_buffer"] == nil then
 			dfp_state.render_targets["shadow_buffer"] = dfp_shadows.make_target(
-				shadow_map_size, shadow_map_size)
+				shadow_map_size, shadow_map_size, dfp_state.config)
 		end
 	else
 		if dfp_state.render_targets["shadow_buffer"] ~= nil then
@@ -31,10 +31,11 @@ local function rebuild_assets()
 		end
 	end
 
-	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] then
+	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] or 
+	   dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
 		if dfp_state.render_targets["lighting_buffer"] == nil then
 			dfp_state.render_targets["lighting_buffer"] = dfp_lighting.make_target(
-				render.get_window_width(), render.get_window_height())
+				render.get_window_width(), render.get_window_height(), dfp_state.config)
 		end
 	else
 		if dfp_state.render_targets["lighting_buffer"] ~= nil then
@@ -64,6 +65,25 @@ local function resize_assets()
 	end
 end
 
+local function print_graph(root)
+	print("Printing graph")
+	if root == nil then
+		return nil
+	end
+	local node = root
+	local depth = 0
+	repeat
+		local lbl = "|-"
+		for i = 0, depth do
+			lbl = " " .. lbl
+		end
+		lbl = lbl .. node.name
+		depth = depth + 1
+		print(lbl)
+		node = node.output
+	until node == nil
+end
+
 local function get_node(root, node_key)
 	if root == nil then
 		return nil
@@ -74,19 +94,33 @@ local function get_node(root, node_key)
 			return node
 		end
 		node = node.output
-	until node.output == nil
+	until node == nil
+end
+
+local function set_node_enabled_flag(handle, flag)
+	if handle == nil then
+		return
+	end
+	local node = get_node(dfp_state.render_graph, handle)
+	if node ~= nil then
+		if node.enabled ~= flag then
+			print("Setting node visibility for " .. node.name .. " to " .. tostring(flag))
+		end
+		node.enabled = flag
+	end
 end
 
 local function rebuild_graph()
 	local node_root           = dfp_graph.node(nil, dfp_constants.node_keys.ROOT)
 	local node_shadow         = dfp_graph.node()
 	local node_lighting       = dfp_graph.node()
+	local node_lighting_hdr   = dfp_graph.node()
 	local node_postprocessing = dfp_graph.node()
 
 	if dfp_state.config[dfp_constants.config_keys.SHADOWS] then
 		node_shadow            = dfp_graph.node(dfp_shadows.pass, dfp_constants.node_keys.SHADOWS)
-		node_shadow.material   = dfp_constants.material_keys.SHADOW_PASS
 		node_shadow.target     = dfp_state.render_targets["shadow_buffer"]
+		node_shadow.material   = dfp_constants.material_keys.SHADOW_PASS
 		node_shadow.predicates = dfp_state.render_predicates.SCENE_PASS
 	end
 	
@@ -106,6 +140,14 @@ local function rebuild_graph()
 		node_lighting.target          = dfp_state.render_targets["lighting_buffer"]
 	end
 
+	if dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
+		node_lighting_hdr 			               = dfp_graph.node(dfp_lighting.pass_hdr, dfp_constants.node_keys.LIGHTING_HDR)
+		node_lighting_hdr.constant_buffer          = render.constant_buffer()
+		node_lighting_hdr.constant_buffer.exposure = vmath.vector4(1,0,0,0)
+		node_lighting_hdr.predicates               = dfp_state.render_predicates.TONEMAPPING_PASS
+		node_lighting_hdr.material                 = dfp_constants.material_keys.TONEMAPPING_PASS
+	end
+
 	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] then
 		node_postprocessing        = dfp_graph.node(nil, dfp_constants.node_keys.POSTPROCESSING)
 		node_postprocessing.target = node_lighting.target
@@ -113,12 +155,13 @@ local function rebuild_graph()
 
 	dfp_graph.set_output(node_root, node_shadow)
 	dfp_graph.set_output(node_shadow, node_lighting)
-	dfp_graph.set_output(node_lighting, node_postprocessing)
+	dfp_graph.set_output(node_lighting, node_lighting_hdr)
+	dfp_graph.set_output(node_lighting_hdr, node_postprocessing)
 	
 	-- Hook up custom passes after core graph has been built
 	for k, v in pairs(dfp_state.custom_passes) do
 		local desc = dfp_state.custom_passes[k]
-		local node_custom_pass = dfp_graph.node(dfp_postprocessing.pass, "custom_pass_" .. k)
+		local node_custom_pass = dfp_graph.node(dfp_postprocessing.pass, desc.handle)
 
 		node_custom_pass.material = v.material
 		node_custom_pass.predicate = render.predicate(v.predicate)
@@ -131,13 +174,17 @@ local function rebuild_graph()
 			end
 		end
 
-		local after_node = get_node(note_root, desc["after"])
+		local after_node = get_node(node_root, desc["after"])
+		
 		if after_node ~= nil then
+			print("Adding custom pass " .. desc.handle .. " after " .. after_node.name)
 			local old_output = after_node.output
 			dfp_graph.set_output(after_node, node_custom_pass)
 			dfp_graph.set_output(node_custom_pass, old_output)
 		end
 	end
+
+	print_graph(node_root)
 
 	dfp_state.render_graph = node_root
 end
@@ -245,7 +292,17 @@ api.update = function()
 end
 
 api.add_custom_pass = function(desc)
+	desc.handle = "custom_pass_" .. #dfp_state.custom_passes
 	table.insert(dfp_state.custom_passes, desc)
+	return desc.handle
+end
+
+api.enable_pass = function(handle)
+	set_node_enabled_flag(handle, true)
+end
+
+api.disable_pass = function(handle)
+	set_node_enabled_flag(handle, false)
 end
 
 api.get_node = function(node_key)
