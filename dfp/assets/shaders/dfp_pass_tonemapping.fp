@@ -16,4 +16,5 @@ void main()
 	vec4 lighting_sample = texture2D(tex_lighting, var_texcoord0);
 	vec3 lighting_tonemapped = tonemapping_reinhard(lighting_sample.rgb);
 	gl_FragColor = vec4(lighting_tonemapped, 1.0);
+	//gl_FragColor = vec4(lighting_sample.rgb, 1.0);
 }

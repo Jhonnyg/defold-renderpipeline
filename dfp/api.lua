@@ -143,7 +143,7 @@ local function rebuild_graph()
 	if dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
 		node_lighting_hdr 			               = dfp_graph.node(dfp_lighting.pass_hdr, dfp_constants.node_keys.LIGHTING_HDR)
 		node_lighting_hdr.constant_buffer          = render.constant_buffer()
-		node_lighting_hdr.constant_buffer.exposure = vmath.vector4(1,0,0,0)
+		node_lighting_hdr.constant_buffer.exposure = vmath.vector4(0.2,0,0,0)
 		node_lighting_hdr.predicates               = dfp_state.render_predicates.TONEMAPPING_PASS
 		node_lighting_hdr.material                 = dfp_constants.material_keys.TONEMAPPING_PASS
 	end
@@ -184,7 +184,7 @@ local function rebuild_graph()
 		end
 	end
 
-	print_graph(node_root)
+	--print_graph(node_root)
 
 	dfp_state.render_graph = node_root
 end

@@ -11,7 +11,7 @@ lighting.make_target = function(w, h, dfp_config)
 	end
 	
 	local color_params = {
-		format     = render.FORMAT_RGBA,
+		format     = color_fmt,
 		width      = w,
 		height     = h,
 		min_filter = render.FILTER_LINEAR,
