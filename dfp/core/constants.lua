@@ -28,20 +28,25 @@ constants.config_keys = {
 	SHADOWS_SHADOW_MAP_SIZE      = 6,
 	-- Post processing
 	POST_PROCESSING              = 7,
+	POST_PROCESSING_BLOOM        = 8,
 }
 
 constants.node_keys = {
-	ROOT           = "node_root",
-	SHADOWS        = "node_shadows",
-	LIGHTING       = "node_lighting",
-	LIGHTING_HDR   = "node_lighting_hdr",
-	POSTPROCESSING = "node_postprocessing"
+	ROOT                 = "node_root",
+	FRAMEBUFFER          = "node_framebuffer",
+	SHADOWS              = "node_shadows",
+	LIGHTING             = "node_lighting",
+	LIGHTING_HDR         = "node_lighting_hdr",
+	POSTPROCESSING       = "node_postprocessing",
+	POSTPROCESSING_BLOOM = "node_postprocessing_bloom"
 }
 
 constants.material_keys = {
-	SHADOW_PASS      = "dfp_pass_shadow",
-	SCENE_PASS       = "dfp_pass_scene",
-	TONEMAPPING_PASS = "dfp_pass_tonemapping",
+	SHADOW_PASS           = "dfp_pass_shadow",
+	SCENE_PASS            = "dfp_pass_scene",
+	TONEMAPPING_PASS      = "dfp_pass_tonemapping",
+	BLOOM_PASS            = "dfp_pass_bloom",
+	BLOOM_PASS_DOWNSAMPLE = "dfp_pass_bloom_downsample"
 }
 
 return constants

@@ -27,7 +27,7 @@ graph.set_output = function(node, node_output)
 end
 
 graph.execute = function(node, parent, render_data, camera)
-	if node.enabled then	
+	if node.enabled then
 		node.execute(node, parent, render_data, camera)
 	end
 	if node.output ~= nil then

@@ -11,6 +11,7 @@ config.default = function()
 		[dfp_constants.config_keys.SHADOWS]                      = true,
 		[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]      = 1024,
 		[dfp_constants.config_keys.POST_PROCESSING]      		 = false,
+		[dfp_constants.config_keys.POST_PROCESSING_BLOOM]        = false,
 	}
 end
 

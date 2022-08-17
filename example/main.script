@@ -4,6 +4,7 @@ function init(self)
 	dfp.configure({
 		[dfp.config.LIGHTING_HDR]            = true,
 		[dfp.config.POST_PROCESSING]         = true,
+		[dfp.config.POST_PROCESSING_BLOOM]   = true,
 		[dfp.config.SHADOWS]                 = true,
 		[dfp.config.SHADOWS_SHADOW_MAP_SIZE] = 2048
 	})
@@ -11,7 +12,7 @@ function init(self)
 	self.pass_shadows_debug = dfp.add_custom_pass({
 		predicate = {"postprocess_shadow_debug"},
 		material  = "postprocess_shadow_debug",
-		after     = dfp.node_keys.POSTPROCESSING,
+		before    = dfp.node_keys.FRAMEBUFFER,
 		textures  = {
 			dfp.node_keys.SHADOWS
 		}

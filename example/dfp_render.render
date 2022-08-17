@@ -8,10 +8,14 @@ materials {
   material: "/dfp/assets/materials/dfp_pass_tonemapping.material"
 }
 materials {
-  name: "dfp_pass_bloom"
-  material: "/dfp/assets/materials/dfp_pass_bloom.material"
-}
-materials {
   name: "dfp_pass_bloom_downsample"
   material: "/dfp/assets/materials/dfp_pass_bloom_downsample.material"
+}
+materials {
+  name: "postprocess_shadow_debug"
+  material: "/example/assets/postprocess_shadow_debug.material"
+}
+materials {
+  name: "dfp_pass_bloom"
+  material: "/dfp/assets/materials/dfp_pass_bloom.material"
 }

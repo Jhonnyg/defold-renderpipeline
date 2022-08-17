@@ -3,15 +3,9 @@ local dfp_constants = require 'dfp.core.constants'
 
 local lighting = {}
 
-lighting.make_target = function(w, h, dfp_config)
-	local color_fmt = render.FORMAT_RGBA
-
-	if dfp_config[dfp_constants.config_keys.LIGHTING_HDR] then
-		color_fmt = render.FORMAT_RGBA32F
-	end
-	
+local function make_target(w,h, color_format, use_depth)
 	local color_params = {
-		format     = color_fmt,
+		format     = color_format,
 		width      = w,
 		height     = h,
 		min_filter = render.FILTER_LINEAR,
@@ -20,20 +14,38 @@ lighting.make_target = function(w, h, dfp_config)
 		v_wrap     = render.WRAP_CLAMP_TO_EDGE
 	}
 
-	local depth_params = { 
-		format        = render.FORMAT_DEPTH,
-		width         = w,
-		height        = h,
-		min_filter    = render.FILTER_NEAREST,
-		mag_filter    = render.FILTER_NEAREST,
-		u_wrap        = render.WRAP_CLAMP_TO_EDGE,
-		v_wrap        = render.WRAP_CLAMP_TO_EDGE
-	}
+	local depth_params = nil
+
+	if use_depth then
+		depth_params = { 
+			format        = render.FORMAT_DEPTH,
+			width         = w,
+			height        = h,
+			min_filter    = render.FILTER_NEAREST,
+			mag_filter    = render.FILTER_NEAREST,
+			u_wrap        = render.WRAP_CLAMP_TO_EDGE,
+			v_wrap        = render.WRAP_CLAMP_TO_EDGE
+		}
+	end
 
 	return render.render_target({
 		[render.BUFFER_COLOR_BIT] = color_params,
 		[render.BUFFER_DEPTH_BIT] = depth_params
 	})
+end
+
+lighting.make_target = function(w, h, dfp_config)
+	local color_fmt = render.FORMAT_RGBA
+
+	if dfp_config[dfp_constants.config_keys.LIGHTING_HDR] then
+		color_fmt = render.FORMAT_RGBA32F
+	end
+
+	return make_target(w, h, color_fmt, true)
+end
+
+lighting.make_target_hdr = function(w, h, dfp_config)
+	return make_target(w, h, render.FORMAT_RGBA, false)
 end
 
 lighting.pass = function(node, parent, render_data, camera)
@@ -108,11 +120,15 @@ lighting.pass_hdr = function(node, parent, render_data, camera)
 
 	--pprint(parent.target)
 
+	render.set_render_target(node.target)
+
 	--render.enable_material(node.material)
 	render.enable_texture(0, parent.target, render.BUFFER_COLOR_BIT)
 	render.draw(node.predicates, { constants = node.constant_buffer })
 	render.disable_texture(0)
 	--render.disable_material()
+
+	render.set_render_target(render.RENDER_TARGET_DEFAULT)
 end
 
 return lighting

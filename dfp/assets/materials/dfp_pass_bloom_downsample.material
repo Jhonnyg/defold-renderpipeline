@@ -1,0 +1,22 @@
+name: "dfp_pass_tonemapping"
+tags: "dfp_pass_bloom_downsample"
+vertex_program: "/dfp/assets/shaders/dfp_pass_fullscreen.vp"
+fragment_program: "/dfp/assets/shaders/dfp_pass_bloom_downsample.fp"
+vertex_space: VERTEX_SPACE_WORLD
+fragment_constants {
+  name: "tex_resolution"
+  type: CONSTANT_TYPE_USER
+  value {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+}
+samplers {
+  name: "tex_lighting"
+  wrap_u: WRAP_MODE_REPEAT
+  wrap_v: WRAP_MODE_REPEAT
+  filter_min: FILTER_MODE_MIN_LINEAR
+  filter_mag: FILTER_MODE_MAG_LINEAR
+}
