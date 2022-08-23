@@ -20,14 +20,8 @@ helpers.translate_matrix = function(mat,pos)
 end
 
 helpers.get_view_matrix_from_light = function(light)
-	--local light_rotation_quat = helpers.get_rotation_from_yaw_pitch(light.rotation.x, light.rotation.y)
-
 	local rotation_mat = vmath.matrix4_from_quat(light.rotation)
-
 	return vmath.inv(helpers.translate_matrix(rotation_mat, light.position))
-	
-	--local translated_mat = vmath.matrix4_translation(light.position)
-	--return vmath.inv(rotation_mat)
 end
 
 helpers.get_projection_matrix_from_light = function(light)

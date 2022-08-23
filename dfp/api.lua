@@ -244,15 +244,13 @@ local function rebuild_graph()
 			node_postprocessing_bloom.textures                        = { dfp_state.render_targets["lighting_buffer_hdr"] }
 			node_postprocessing_bloom.target                          = render.RENDER_TARGET_DEFAULT
 			node_postprocessing_bloom.constant_buffer                 = render.constant_buffer()
-			node_postprocessing_bloom.constant_buffer.u_filter_radius = vmath.vector4(0.025, 0, 0, 0)
-			node_postprocessing_bloom.constant_buffer.u_bloom_params  = vmath.vector4(0.4, 0, 0, 0) -- POST_PROCESSING_BLOOM_STRENGTH
 			node_postprocessing_bloom.material                        = dfp_constants.material_keys.BLOOM_PASS
 			node_postprocessing_bloom.predicate                       = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
+			-- Downsampling pass
 			node_postprocessing_bloom.material_downsample             = dfp_constants.material_keys.BLOOM_PASS_DOWNSAMPLE
 			node_postprocessing_bloom.predicate_downsample            = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
 			node_postprocessing_bloom.targets_downsample              = dfp_state.render_targets["downsample_buffers"]
-
-			-- Upsampling assets
+			-- Upsampling pass
 			node_postprocessing_bloom.material_upsample               = dfp_constants.material_keys.BLOOM_PASS_UPSAMPLE
 			node_postprocessing_bloom.predicate_upsample              = dfp_state.render_predicates.BLOOM_PASS_UPSAMPLE
 		end

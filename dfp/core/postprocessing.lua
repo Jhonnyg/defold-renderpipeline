@@ -103,9 +103,6 @@ pp.pass_bloom = function(node, parent, render_data, camera)
 		local rt = node.targets_downsample[i]
 		local rt_w = render.get_render_target_width(rt, render.BUFFER_COLOR_BIT)
 		local rt_h = render.get_render_target_height(rt, render.BUFFER_COLOR_BIT)
-
-		-- print(i, rt_w, rt_h)
-		--node.constant_buffer.tex_resolution = vmath.vector4(downsample_input_texture_w, downsample_input_texture_h, 0, 0)
 		
 		render.set_viewport(0, 0, rt_w, rt_h)
 		render.set_render_target(rt)
