@@ -53,6 +53,10 @@ pp.pass = function(node, parent, render_data, camera)
 end
 
 pp.pass_bloom = function(node, parent, render_data, camera)
+	local bloom_radius                  = render_data.postprocessing_bloom.filter_radius
+	local bloom_strength                = render_data.postprocessing_bloom.strength
+	node.constant_buffer.u_bloom_params = vmath.vector4(bloom_radius, bloom_strength, 0, 0)
+	
 	render.disable_state(render.STATE_DEPTH_TEST)
 	render.disable_state(render.STATE_STENCIL_TEST)
 	render.disable_state(render.STATE_BLEND)
@@ -72,6 +76,7 @@ pp.pass_bloom = function(node, parent, render_data, camera)
 		
 		render.set_viewport(0, 0, rt_w, rt_h)
 		render.set_render_target(v)
+		render.clear({[render.BUFFER_COLOR_BIT] = vmath.vector4(0,0,0,0)})
 		render.enable_texture(0, downsample_input_texture, render.BUFFER_COLOR_BIT)
 		render.draw(node.predicate_downsample, {constants = node.constant_buffer})
 		render.disable_texture(0)
@@ -80,6 +85,37 @@ pp.pass_bloom = function(node, parent, render_data, camera)
 		downsample_input_texture = v
 		downsample_input_texture_w = rt_w
 		downsample_input_texture_h = rt_h
+	end
+
+	-- render.disable_material()
+
+
+	render.enable_material(node.material_upsample)
+
+	-- Enable additive blending
+	render.enable_state(render.STATE_BLEND)
+	render.set_blend_func(render.BLEND_ONE, render.BLEND_ONE)
+	
+	local upsample_input_texture = downsample_input_texture
+	
+	for i = #node.targets_downsample-1, 1, -1 do
+
+		local rt = node.targets_downsample[i]
+		local rt_w = render.get_render_target_width(rt, render.BUFFER_COLOR_BIT)
+		local rt_h = render.get_render_target_height(rt, render.BUFFER_COLOR_BIT)
+
+		-- print(i, rt_w, rt_h)
+		--node.constant_buffer.tex_resolution = vmath.vector4(downsample_input_texture_w, downsample_input_texture_h, 0, 0)
+		
+		render.set_viewport(0, 0, rt_w, rt_h)
+		render.set_render_target(rt)
+		render.clear({[render.BUFFER_COLOR_BIT] = vmath.vector4(0,0,0,0)})
+		render.enable_texture(0, upsample_input_texture, render.BUFFER_COLOR_BIT)
+		render.draw(node.predicate_upsample, {constants = node.constant_buffer})
+		render.disable_texture(0)
+		render.set_render_target(render.RENDER_TARGET_DEFAULT)
+
+		upsample_input_texture = rt
 	end
 
 	render.disable_material()
@@ -98,9 +134,17 @@ pp.pass_bloom = function(node, parent, render_data, camera)
 
 	render.set_viewport(0, 0, viewport_w, viewport_h)	
 	render.enable_material(node.material)
-	render.enable_texture(0, downsample_input_texture, render.BUFFER_COLOR_BIT)
-	render.draw(node.predicate)
+	render.enable_texture(0, upsample_input_texture, render.BUFFER_COLOR_BIT)
+
+	for k, v in pairs(node.textures) do
+		render.enable_texture(k, v, render.BUFFER_COLOR_BIT)
+	end
+
+	render.draw(node.predicate, {constants = node.constant_buffer})
 	render.disable_texture(0)
+	for k, v in pairs(node.textures) do
+		render.disable_texture(k)
+	end
 	render.disable_material()
 	render.set_render_target(render.RENDER_TARGET_DEFAULT)
 end

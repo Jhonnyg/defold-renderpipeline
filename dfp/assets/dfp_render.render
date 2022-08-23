@@ -15,3 +15,7 @@ materials {
   name: "dfp_pass_bloom_downsample"
   material: "/dfp/assets/materials/dfp_pass_bloom_downsample.material"
 }
+materials {
+  name: "dfp_pass_bloom_upsample"
+  material: "/dfp/assets/materials/dfp_pass_bloom_upsample.material"
+}

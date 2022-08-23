@@ -1,15 +1,21 @@
-local dfp = require 'dfp.api'
+local dfp            = require 'dfp.api'
+local example_gui    = require 'example.modules.gui'
+local example_camera = require 'example.modules.fpscamera'
 
 function init(self)
-	dfp.configure({
-		[dfp.config.LIGHTING_HDR]            = true,
-		[dfp.config.POST_PROCESSING]         = true,
-		[dfp.config.POST_PROCESSING_BLOOM]   = true,
-		[dfp.config.SHADOWS]                 = true,
-		[dfp.config.SHADOWS_SHADOW_MAP_SIZE] = 2048
-	})
+	msg.post(".", "acquire_input_focus")
 
+	-- Configure pipeline with high-level features
+	self.dfp_configuration 									   = dfp.get_config_default()
+	self.dfp_configuration[dfp.config.LIGHTING_HDR]            = true
+	self.dfp_configuration[dfp.config.POST_PROCESSING]         = true
+	self.dfp_configuration[dfp.config.POST_PROCESSING_BLOOM]   = true
+	self.dfp_configuration[dfp.config.SHADOWS]                 = true
+	self.dfp_configuration[dfp.config.SHADOWS_SHADOW_MAP_SIZE] = 2048
+
+	-- Create a custom debug pass
 	self.pass_shadows_debug = dfp.add_custom_pass({
+		enabled   = false,
 		predicate = {"postprocess_shadow_debug"},
 		material  = "postprocess_shadow_debug",
 		before    = dfp.node_keys.FRAMEBUFFER,
@@ -17,13 +23,39 @@ function init(self)
 			dfp.node_keys.SHADOWS
 		}
 	})
+
+	dfp.configure(self.dfp_configuration)
+
+	self.camera = example_camera.default()
+	example_gui.init()
 end
 
 function update(self, dt)
-	dfp.disable_pass(self.pass_shadows_debug)
+	example_gui.on_begin()
+	example_camera.update(self.camera, dt)
+
 	dfp.update()
+	example_gui.on_end()
 end
 
 function on_reload(self)
 	dfp.on_reload()
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("key_w") then
+		example_camera.move_forward(self.camera)
+	elseif action_id == hash("key_s") then
+		example_camera.move_backward(self.camera)
+	elseif action_id == hash("key_a") then
+		example_camera.strafe_left(self.camera)
+	elseif action_id == hash("key_d") then
+		example_camera.strafe_right(self.camera)
+	elseif action_id == hash("key_q") then
+		example_camera.move_down(self.camera)
+	elseif action_id == hash("key_e") then
+		example_camera.move_up(self.camera)
+	elseif action_id == hash("touch") then
+		example_camera.rotate(self.camera, action.dx, action.dy)
+	end
 end

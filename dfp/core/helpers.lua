@@ -12,7 +12,7 @@ helpers.get_main_light = function(render_data)
 	end
 end
 
-local function translate_matrix(mat,pos)
+helpers.translate_matrix = function(mat,pos)
 	mat.m03 = mat.m03 + pos.x
 	mat.m13 = mat.m13 + pos.y
 	mat.m23 = mat.m23 + pos.z
@@ -24,7 +24,7 @@ helpers.get_view_matrix_from_light = function(light)
 
 	local rotation_mat = vmath.matrix4_from_quat(light.rotation)
 
-	return vmath.inv(translate_matrix(rotation_mat, light.position))
+	return vmath.inv(helpers.translate_matrix(rotation_mat, light.position))
 	
 	--local translated_mat = vmath.matrix4_translation(light.position)
 	--return vmath.inv(rotation_mat)

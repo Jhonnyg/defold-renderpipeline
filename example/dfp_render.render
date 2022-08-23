@@ -19,3 +19,7 @@ materials {
   name: "dfp_pass_bloom"
   material: "/dfp/assets/materials/dfp_pass_bloom.material"
 }
+materials {
+  name: "dfp_pass_bloom_upsample"
+  material: "/dfp/assets/materials/dfp_pass_bloom_upsample.material"
+}

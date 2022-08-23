@@ -62,6 +62,7 @@ lighting.pass = function(node, parent, render_data, camera)
 	local main_light_mtx = vmath.matrix4()
 	local main_light     = dfp_helpers.get_main_light(render_data)
 	local light          = vmath.vector4()
+	local light_params   = vmath.vector4(1,0,0,0)
 
 	if main_light ~= nil then
 		local main_light_view       = dfp_helpers.get_view_matrix_from_light(main_light)
@@ -73,6 +74,8 @@ lighting.pass = function(node, parent, render_data, camera)
 		light.y = main_light_inv.m13
 		light.z = main_light_inv.m23
 		light.w = 1
+
+		light_params.x = main_light.brightness
 	end
 
 	node.constant_buffer.mtx_light_mvp0 = main_light_mtx.c0
@@ -80,8 +83,10 @@ lighting.pass = function(node, parent, render_data, camera)
 	node.constant_buffer.mtx_light_mvp2 = main_light_mtx.c2
 	node.constant_buffer.mtx_light_mvp3 = main_light_mtx.c3
 	node.constant_buffer.light          = light
+	node.constant_buffer.u_light_params = light_params
 		
-	render.enable_state(render.STATE_BLEND)
+	--render.enable_state(render.STATE_BLEND)
+	render.disable_state(render.STATE_BLEND)
 	render.enable_state(render.STATE_CULL_FACE)
 	render.enable_state(render.STATE_DEPTH_TEST)
 	render.set_depth_mask(true)
@@ -98,6 +103,7 @@ lighting.pass = function(node, parent, render_data, camera)
 	end
 	
 	if camera.clear then
+		-- TODO: alpha will break brightness value from HDR/Scene target
 		render.clear({
 			[render.BUFFER_COLOR_BIT]   = camera.clear_color,
 			[render.BUFFER_DEPTH_BIT]   = camera.clear_depth,
@@ -117,8 +123,6 @@ lighting.pass_hdr = function(node, parent, render_data, camera)
 	render.disable_state(render.STATE_CULL_FACE)
 	render.disable_state(render.STATE_DEPTH_TEST)
 	render.set_depth_mask(false)
-
-	--pprint(parent.target)
 
 	render.set_render_target(node.target)
 

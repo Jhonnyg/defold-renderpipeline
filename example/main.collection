@@ -30,6 +30,11 @@ instances {
       value: "500.0"
       type: PROPERTY_TYPE_NUMBER
     }
+    properties {
+      id: "light_brightness"
+      value: "10.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
   }
   scale3 {
     x: 1.0
@@ -41,21 +46,21 @@ instances {
   id: "dfp_camera"
   prototype: "/dfp/objects/dfp_camera.go"
   position {
-    x: 1.745
-    y: 6.623
-    z: 19.135
+    x: 0.0
+    y: 0.0
+    z: 0.0
   }
   rotation {
-    x: -0.12993546
-    y: 3.5182847E-17
-    z: -9.376409E-17
-    w: 0.99152243
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
   }
   component_properties {
     id: "dfp_camera"
     properties {
       id: "camera_clear_color"
-      value: "0.25, 0.25, 0.25, 1.0"
+      value: "0.25, 0.25, 0.25, 0.0"
       type: PROPERTY_TYPE_VECTOR4
     }
   }
@@ -276,6 +281,21 @@ embedded_instances {
   "components {\n"
   "  id: \"fs_pass\"\n"
   "  component: \"/example/scene/fs_pass.model\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "}\n"
+  "components {\n"
+  "  id: \"imgui\"\n"
+  "  component: \"/imgui/imgui.script\"\n"
   "  position {\n"
   "    x: 0.0\n"
   "    y: 0.0\n"

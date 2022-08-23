@@ -1,10 +1,10 @@
-varying mediump vec2 var_texcoord0;
+varying mediump vec2 	var_texcoord0;
 uniform highp sampler2D tex_lighting;
-uniform highp vec4 tex_resolution;
+uniform highp vec4      tex_resolution;
 
 // Note: This code is directly taken (and slightly modified) from https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
 //       All credit goes to that author (Jorge Jimenez)!
-vec3 get_downsampled_color(sampler2D srcTexture, vec2 srcResolution, vec2 texCoord)
+vec3 get_downsampled_color(sampler2D srcTexture, vec2 srcResolution, vec2 texCoord, vec3 middle_sample)
 {
 	vec2 srcTexelSize = 1.0 / srcResolution;
 	float x = srcTexelSize.x;
@@ -22,7 +22,7 @@ vec3 get_downsampled_color(sampler2D srcTexture, vec2 srcResolution, vec2 texCoo
 	vec3 c = texture2D(srcTexture, vec2(texCoord.x + 2*x, texCoord.y + 2*y)).rgb;
 
 	vec3 d = texture2D(srcTexture, vec2(texCoord.x - 2*x, texCoord.y)).rgb;
-	vec3 e = texture2D(srcTexture, vec2(texCoord.x,       texCoord.y)).rgb;
+	vec3 e = middle_sample; //texture2D(srcTexture, vec2(texCoord.x,       texCoord.y)).rgb;
 	vec3 f = texture2D(srcTexture, vec2(texCoord.x + 2*x, texCoord.y)).rgb;
 
 	vec3 g = texture2D(srcTexture, vec2(texCoord.x - 2*x, texCoord.y - 2*y)).rgb;
@@ -56,6 +56,7 @@ vec3 get_downsampled_color(sampler2D srcTexture, vec2 srcResolution, vec2 texCoo
 
 void main()
 {
-	lowp vec3 color = get_downsampled_color(tex_lighting, tex_resolution.st, var_texcoord0);
-	gl_FragColor = vec4(color, 1.0);
+	vec4 middle_sample = texture2D(tex_lighting, var_texcoord0);
+	lowp vec3 color = get_downsampled_color(tex_lighting, tex_resolution.st, var_texcoord0, middle_sample.rgb);
+	gl_FragColor = vec4(color * middle_sample.a, 1.0);
 }

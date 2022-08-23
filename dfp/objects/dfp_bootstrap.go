@@ -58,10 +58,32 @@ embedded_components {
   }
 }
 embedded_components {
-  id: "dfp_pass_bloom"
+  id: "dfp_pass_bloom_downsample"
   type: "model"
   data: "mesh: \"/builtins/assets/meshes/quad_2x2.dae\"\n"
   "material: \"/dfp/assets/materials/dfp_pass_bloom_downsample.material\"\n"
+  "skeleton: \"\"\n"
+  "animations: \"\"\n"
+  "default_animation: \"\"\n"
+  "name: \"unnamed\"\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+}
+embedded_components {
+  id: "dfp_pass_bloom_upsample"
+  type: "model"
+  data: "mesh: \"/builtins/assets/meshes/quad_2x2.dae\"\n"
+  "material: \"/dfp/assets/materials/dfp_pass_bloom_upsample.material\"\n"
   "skeleton: \"\"\n"
   "animations: \"\"\n"
   "default_animation: \"\"\n"

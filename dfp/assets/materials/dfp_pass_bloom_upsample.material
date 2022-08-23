@@ -1,10 +1,10 @@
-name: "dfp_pass_downsample"
-tags: "dfp_pass_bloom_downsample"
+name: "dfp_pass_bloom_upsample"
+tags: "dfp_pass_bloom_upsample"
 vertex_program: "/dfp/assets/shaders/dfp_pass_fullscreen.vp"
-fragment_program: "/dfp/assets/shaders/dfp_pass_bloom_downsample.fp"
+fragment_program: "/dfp/assets/shaders/dfp_pass_bloom_upsample.fp"
 vertex_space: VERTEX_SPACE_WORLD
 fragment_constants {
-  name: "tex_resolution"
+  name: "u_bloom_params"
   type: CONSTANT_TYPE_USER
   value {
     x: 0.0
@@ -14,7 +14,7 @@ fragment_constants {
   }
 }
 samplers {
-  name: "tex_lighting"
+  name: "tex_downsampled"
   wrap_u: WRAP_MODE_CLAMP_TO_EDGE
   wrap_v: WRAP_MODE_CLAMP_TO_EDGE
   filter_min: FILTER_MODE_MIN_LINEAR

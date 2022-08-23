@@ -5,6 +5,7 @@ local dfp_lighting       = require 'dfp.core.lighting'
 local dfp_postprocessing = require 'dfp.core.postprocessing'
 local dfp_constants      = require 'dfp.core.constants'
 local dfp_config         = require 'dfp.core.config'
+local dfp_helpers        = require 'dfp.core.helpers'
 
 local dfp_state = {
 	render_init       = false,
@@ -55,7 +56,7 @@ local function rebuild_assets()
 				dfp_state.render_targets["downsample_buffers"] = {}
 
 				local rt_w     = render.get_window_width()
-				local rt_h     = render.get_window_width()
+				local rt_h     = render.get_window_height()
 				local max_mips = 5
 
 				for i = 1, max_mips do
@@ -122,7 +123,6 @@ local function resize_assets()
 end
 
 local function print_graph(root)
-	print("Printing graph")
 	if root == nil then
 		return nil
 	end
@@ -188,7 +188,6 @@ local function set_node_enabled_flag(handle, flag)
 		if node.enabled ~= flag then
 			print("Setting node visibility for " .. node.name .. " to " .. tostring(flag))
 			node.enabled = flag
-			print_graph(dfp_state.render_graph)
 		end
 	end
 end
@@ -228,7 +227,7 @@ local function rebuild_graph()
 	if dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
 		node_lighting_hdr 			               = dfp_graph.node(dfp_lighting.pass_hdr, dfp_constants.node_keys.LIGHTING_HDR)
 		node_lighting_hdr.constant_buffer          = render.constant_buffer()
-		node_lighting_hdr.constant_buffer.exposure = vmath.vector4(0.2,0,0,0)
+		node_lighting_hdr.constant_buffer.exposure = vmath.vector4(0.5,0,0,0)
 		node_lighting_hdr.predicates               = dfp_state.render_predicates.TONEMAPPING_PASS
 		node_lighting_hdr.material                 = dfp_constants.material_keys.TONEMAPPING_PASS
 		node_lighting_hdr.textures                 = { node_lighting.target }
@@ -241,15 +240,21 @@ local function rebuild_graph()
 		--node_postprocessing.target = dfp_state.render_targets["postprocessing_buffer"]
 		
 		if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM] then
-			node_postprocessing_bloom                      = dfp_graph.node(dfp_postprocessing.pass_bloom, dfp_constants.node_keys.POSTPROCESSING_BLOOM)
-			node_postprocessing_bloom.textures             = { dfp_state.render_targets["lighting_buffer_hdr"] }
-			node_postprocessing_bloom.target               = render.RENDER_TARGET_DEFAULT
-			node_postprocessing_bloom.constant_buffer      = render.constant_buffer()
-			node_postprocessing_bloom.material             = dfp_constants.material_keys.BLOOM_PASS
-			node_postprocessing_bloom.predicate            = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.material_downsample  = dfp_constants.material_keys.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.predicate_downsample = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.targets_downsample   = dfp_state.render_targets["downsample_buffers"]
+			node_postprocessing_bloom                                 = dfp_graph.node(dfp_postprocessing.pass_bloom, dfp_constants.node_keys.POSTPROCESSING_BLOOM)
+			node_postprocessing_bloom.textures                        = { dfp_state.render_targets["lighting_buffer_hdr"] }
+			node_postprocessing_bloom.target                          = render.RENDER_TARGET_DEFAULT
+			node_postprocessing_bloom.constant_buffer                 = render.constant_buffer()
+			node_postprocessing_bloom.constant_buffer.u_filter_radius = vmath.vector4(0.025, 0, 0, 0)
+			node_postprocessing_bloom.constant_buffer.u_bloom_params  = vmath.vector4(0.4, 0, 0, 0) -- POST_PROCESSING_BLOOM_STRENGTH
+			node_postprocessing_bloom.material                        = dfp_constants.material_keys.BLOOM_PASS
+			node_postprocessing_bloom.predicate                       = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
+			node_postprocessing_bloom.material_downsample             = dfp_constants.material_keys.BLOOM_PASS_DOWNSAMPLE
+			node_postprocessing_bloom.predicate_downsample            = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
+			node_postprocessing_bloom.targets_downsample              = dfp_state.render_targets["downsample_buffers"]
+
+			-- Upsampling assets
+			node_postprocessing_bloom.material_upsample               = dfp_constants.material_keys.BLOOM_PASS_UPSAMPLE
+			node_postprocessing_bloom.predicate_upsample              = dfp_state.render_predicates.BLOOM_PASS_UPSAMPLE
 		end
 	end
 
@@ -265,6 +270,9 @@ local function rebuild_graph()
 		local desc = dfp_state.custom_passes[k]
 		local node_custom_pass = dfp_graph.node(dfp_postprocessing.pass, desc.handle)
 
+		if desc["enabled"] ~= nil then
+			node_custom_pass.enabled = desc["enabled"]
+		end
 		node_custom_pass.material = v.material
 		node_custom_pass.predicate = render.predicate(v.predicate)
 
@@ -298,7 +306,7 @@ local function rebuild_graph()
 		end
 	end
 
-	print_graph(node_root)
+	--print_graph(node_root)
 
 	dfp_state.render_graph = node_root
 end
@@ -312,7 +320,9 @@ local function init_render()
 	dfp_state.render_init = true
 end
 
---------------
+-------------------------------------------
+-------------- API functions --------------
+-------------------------------------------
 local api = {}
 
 api.__register_light = function(cmp)
@@ -362,7 +372,7 @@ api.update = function()
 		local c_eye      = c_pos
 		local c_look_at  = c_pos + vmath.vector3(0, 0, 1)
 		local c_up       = vmath.vector3(0, 1, 0)
-
+		
 		c.viewport      = c_viewport
 		c.clear         = c_clear
 		c.clear_color   = c_clear_c
@@ -371,10 +381,20 @@ api.update = function()
 		c.fov           = c_fov
 		c.near          = c_near
 		c.far           = c_far
-		c.view          = vmath.inv(vmath.matrix4_from_quat(c_rot) * vmath.matrix4_translation(c_pos)) 
+		--c.view          = vmath.inv(vmath.matrix4_from_quat(c_rot) * vmath.matrix4_translation(c_pos))
 		c.projection    = vmath.matrix4()
 
+		-- todo: fix this
+		c.view = vmath.inv(dfp_helpers.translate_matrix(vmath.matrix4_from_quat(c_rot), c_pos))
+
 		table.insert(dfp_state.render_data.cameras, c)
+	end
+
+	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM] then
+		local params = {}
+		params.filter_radius = dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM_RADIUS]
+		params.strength 	 = dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM_STRENGTH]
+		dfp_state.render_data.postprocessing_bloom = params
 	end
 
 	if dfp_state.config[dfp_constants.config_keys.LIGHTING] then
@@ -388,12 +408,14 @@ api.update = function()
 			local l_frustum_size = go.get(lmainlighturl, dfp_constants.PROPERTY_LIGHT_FRUSTUM_SIZE)
 			local l_frustum_near = go.get(lmainlighturl, dfp_constants.PROPERTY_LIGHT_FRUSTUM_NEAR)
 			local l_frustum_far  = go.get(lmainlighturl, dfp_constants.PROPERTY_LIGHT_FRUSTUM_FAR)
+			local l_brightness   = go.get(lmainlighturl, dfp_constants.PROPERTY_LIGHT_BRIGHTNESS)
 			
 			table.insert(dfp_state.render_data.lights, {
 				position = lpos,
 				rotation = lrot,
 				is_main_light = lmainlight,
 				is_vertex_light = lvertexlight,
+				brightness = l_brightness,
 				frustum = {
 					size = l_frustum_size,
 					near = l_frustum_near,
@@ -422,8 +444,38 @@ api.get_node = function(node_key)
 	return get_node(dfp_state.render_graph, node_key)
 end
 
+api.get_camera = function(ix)
+	return dfp_state.cameras[ix+1]
+end
+
+api.get_light = function(ix)
+	return dfp_state.lights[ix+1]
+end
+
+api.get_light_count = function()
+	return #dfp_state.lights
+end
+
+api.set_light_brightness = function(l, brightness)
+	local l_url = msg.url(nil, l, "dfp_light")
+	go.set(l_url, dfp_constants.PROPERTY_LIGHT_BRIGHTNESS, brightness)
+end
+
+api.get_light_brightness = function(l)
+	local l_url = msg.url(nil, l, "dfp_light")
+	return go.get(l_url, dfp_constants.PROPERTY_LIGHT_BRIGHTNESS)
+end
+
 api.on_reload = function()
 	dfp_state.config_dirty = true
+end
+
+api.get_config_default = function()
+	return dfp_config.default()
+end
+
+api.get_config = function()
+	return dfp_state.config
 end
 
 -- This must be called from a render script
