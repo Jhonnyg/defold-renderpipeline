@@ -1,5 +1,3 @@
-
-local dfp_graph          = require 'dfp.core.graph'
 local dfp_constants      = require 'dfp.core.constants'
 local dfp_config         = require 'dfp.core.config'
 local dfp_helpers        = require 'dfp.core.helpers'
@@ -69,126 +67,6 @@ dfp_state.render = function(self)
 		end
 	end
 end
-
---[[
-local function rebuild_graph()
-	local node_root                 = dfp_graph.node(nil, dfp_constants.node_keys.ROOT)
-	local node_framebuffer          = dfp_graph.node(nil, dfp_constants.node_keys.FRAMEBUFFER)
-	local node_shadow               = dfp_graph.node(nil, dfp_constants.node_keys.SHADOWS)
-	local node_lighting             = dfp_graph.node(nil, dfp_constants.node_keys.LIGHTING)
-	local node_lighting_hdr         = dfp_graph.node(nil, dfp_constants.node_keys.LIGHTING_HDR)
-	local node_postprocessing       = dfp_graph.node(nil, dfp_constants.node_keys.POSTPROCESSING)
-	local node_postprocessing_bloom = dfp_graph.node(nil, dfp_constants.node_keys.POSTPROCESSING_BLOOM)
-
-	if dfp_state.config[dfp_constants.config_keys.SHADOWS] then
-		node_shadow            = dfp_graph.node(dfp_shadows.pass, dfp_constants.node_keys.SHADOWS)
-		node_shadow.target     = dfp_state.render_targets["shadow_buffer"]
-		node_shadow.material   = dfp_constants.material_keys.SHADOW_PASS
-		node_shadow.predicates = dfp_state.render_predicates.SCENE_PASS
-	end
-	
-	if dfp_state.config[dfp_constants.config_keys.LIGHTING] then
-		node_lighting            = dfp_graph.node(dfp_lighting.pass, dfp_constants.node_keys.LIGHTING)
-		node_lighting.predicates = dfp_state.render_predicates.SCENE_PASS
-
-		-- Construct bias matrix
-		node_lighting.bias_matrix    = vmath.matrix4()
-		node_lighting.bias_matrix.c0 = vmath.vector4(0.5, 0.0, 0.0, 0.0)
-		node_lighting.bias_matrix.c1 = vmath.vector4(0.0, 0.5, 0.0, 0.0)
-		node_lighting.bias_matrix.c2 = vmath.vector4(0.0, 0.0, 0.5, 0.0)
-		node_lighting.bias_matrix.c3 = vmath.vector4(0.5, 0.5, 0.5, 1.0)
-
-		node_lighting.constant_buffer = render.constant_buffer()
-		node_lighting.shadow_buffer   = dfp_state.render_targets["shadow_buffer"]
-		node_lighting.target          = dfp_state.render_targets["lighting_buffer"]
-
-		if dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
-			node_lighting_hdr 			               = dfp_graph.node(dfp_lighting.pass_hdr, dfp_constants.node_keys.LIGHTING_HDR)
-			node_lighting_hdr.constant_buffer          = render.constant_buffer()
-			node_lighting_hdr.constant_buffer.exposure = vmath.vector4(0.5,0,0,0)
-			node_lighting_hdr.predicates               = dfp_state.render_predicates.TONEMAPPING_PASS
-			node_lighting_hdr.material                 = dfp_constants.material_keys.TONEMAPPING_PASS
-			node_lighting_hdr.textures                 = { node_lighting.target }
-			node_lighting_hdr.target                   = dfp_state.render_targets["lighting_buffer_hdr"]
-		end
-	end
-
-	if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING] then
-		-- This creates a dummy node as a container for postprocessing effects to hook into
-		node_postprocessing        = dfp_graph.node(nil, dfp_constants.node_keys.POSTPROCESSING)
-		--node_postprocessing.target = dfp_state.render_targets["postprocessing_buffer"]
-
-		if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_DOF] then
-		end
-		
-		if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM] then
-			node_postprocessing_bloom                      = dfp_graph.node(dfp_postprocessing.pass_bloom, dfp_constants.node_keys.POSTPROCESSING_BLOOM)
-			node_postprocessing_bloom.textures             = { dfp_state.render_targets["lighting_buffer_hdr"] }
-			node_postprocessing_bloom.target               = render.RENDER_TARGET_DEFAULT
-			node_postprocessing_bloom.constant_buffer      = render.constant_buffer()
-			node_postprocessing_bloom.material             = dfp_constants.material_keys.BLOOM_PASS
-			node_postprocessing_bloom.predicate            = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
-			-- Downsampling pass
-			node_postprocessing_bloom.material_downsample  = dfp_constants.material_keys.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.predicate_downsample = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.targets_downsample   = dfp_state.render_targets["downsample_buffers"]
-			-- Upsampling pass
-			node_postprocessing_bloom.material_upsample    = dfp_constants.material_keys.BLOOM_PASS_UPSAMPLE
-			node_postprocessing_bloom.predicate_upsample   = dfp_state.render_predicates.BLOOM_PASS_UPSAMPLE
-		end
-	end
-
-	dfp_graph.set_output(node_root, node_shadow)
-	dfp_graph.set_output(node_shadow, node_lighting)
-	dfp_graph.set_output(node_lighting, node_lighting_hdr)
-	dfp_graph.set_output(node_lighting_hdr, node_postprocessing)
-	dfp_graph.set_output(node_postprocessing, node_postprocessing_bloom)
-	dfp_graph.set_output(node_postprocessing_bloom, node_framebuffer)
-	
-	-- Hook up custom passes after core graph has been built
-	for k, v in pairs(dfp_state.custom_passes) do
-		local desc = dfp_state.custom_passes[k]
-		local node_custom_pass = dfp_graph.node(dfp_postprocessing.pass, desc.handle)
-
-		if desc["enabled"] ~= nil then
-			node_custom_pass.enabled = desc["enabled"]
-		end
-		node_custom_pass.material = v.material
-		node_custom_pass.predicate = render.predicate(v.predicate)
-
-		if v.textures ~= nil then
-			node_custom_pass.textures = {}
-			for _, tex_key in pairs(v.textures) do
-				local tex_node = dfp_graph.get_node(node_root, tex_key)
-				table.insert(node_custom_pass.textures, tex_node.target)
-			end
-		end
-
-		local before_node = dfp_graph.get_node(node_root, desc["before"])
-		local after_node = dfp_graph.get_node(node_root, desc["after"])
-
-		if before_node ~= nil and after_node_node ~= nil then
-			error("Specifying both 'before' and 'after' nodes not supported for custom passes (name: " .. desc.handle .. ")")
-		end
-
-		if before_node ~= nil then
-			print("Adding custom pass " .. desc.handle .. " before " .. before_node.name)
-			local before_parent = dfp_graph.get_parent(node_root, before_node.name)
-			dfp_graph.set_output(before_parent, node_custom_pass)
-			dfp_graph.set_output(node_custom_pass, before_node)
-		end
-		
-		if after_node ~= nil then
-			print("Adding custom pass " .. desc.handle .. " after " .. after_node.name)
-			local old_output = after_node.output
-			dfp_graph.set_output(after_node, node_custom_pass)
-			dfp_graph.set_output(node_custom_pass, old_output)
-		end
-	end
-
-	dfp_state.render_graph = node_root
-end
---]]
 
 local function init_render()
 	for k, v in pairs(dfp_constants.material_keys) do
@@ -302,20 +180,6 @@ api.update = function()
 			})
 		end
 	end
-end
-
-api.add_custom_pass = function(desc)
-	desc.handle = "custom_pass_" .. #dfp_state.custom_passes
-	table.insert(dfp_state.custom_passes, desc)
-	return desc.handle
-end
-
-api.enable_pass = function(handle)
-	dfp_graph.set_enabled(graph.get_node(dfp_state.render_graph, handle), true)
-end
-
-api.disable_pass = function(handle)
-	dfp_graph.set_enabled(graph.get_node(dfp_state.render_graph, handle), false)
 end
 
 api.get_node = function(node_key)

@@ -13,7 +13,7 @@ config.default = function()
 		[dfp_constants.config_keys.POSTPROCESSING]      		  = false,
 		[dfp_constants.config_keys.POSTPROCESSING_BLOOM]          = false,
 		[dfp_constants.config_keys.POSTPROCESSING_BLOOM_STRENGTH] = 0.4,
-		[dfp_constants.config_keys.POSTPROCESSING_BLOOM_RADIUS]   = 0.025,
+		[dfp_constants.config_keys.POSTPROCESSING_BLOOM_RADIUS]   = 0.01,
 	}
 end
 

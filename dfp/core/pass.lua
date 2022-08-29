@@ -49,13 +49,14 @@ local function set_pipeline(pipeline)
 
 	if pipeline.clear ~= nil then
 		local clear_table = {}
-
-		for k, v in pairs(pipeline.clear_table) do
-			clear_table[k] = v
-			current_pipeline.clear_table[k] = v
+		if pipeline.clear and pipeline.clear_table ~= nil then
+			for k, v in pairs(pipeline.clear_table) do
+				clear_table[k] = v
+				current_pipeline.clear_table[k] = v
+			end
+			
+			render.clear(clear_table)
 		end
-		
-		render.clear(clear_table)
 		current_pipeline.clear = pipeline.clear
 	end
 end

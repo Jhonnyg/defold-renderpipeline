@@ -30,7 +30,7 @@ local function do_lights()
 		imgui.text("Light " .. i)
 		local light      = dfp.get_light(i)
 		local brightness = dfp.get_light_brightness(light)
-		local changed, v = imgui.slider_float("Brightness", brightness, 0, 100, 3)
+		local changed, v = imgui.slider_float("Brightness", brightness, 0, 50, 3)
 		if changed then
 			dfp.set_light_brightness(light, v)
 		end
@@ -42,7 +42,7 @@ local function do_cameras()
 		imgui.text("Camea " .. i)
 		local camera     = dfp.get_camera(i)
 		local exposure   = dfp.get_camera_exposure(camera)
-		local changed, v = imgui.slider_float("Exposure", exposure, -2, 2, 3)
+		local changed, v = imgui.slider_float("Exposure", exposure, 0, 2, 3)
 		if changed then
 			dfp.set_camera_exposure(camera, v)
 		end
