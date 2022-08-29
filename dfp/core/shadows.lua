@@ -1,4 +1,6 @@
-local dfp_helpers = require 'dfp.core.helpers'
+local dfp_constants = require 'dfp.core.constants'
+local dfp_helpers   = require 'dfp.core.helpers'
+local dfp_pass      = require 'dfp.core.pass'
 
 local shadows = {}
 
@@ -27,6 +29,39 @@ shadows.make_target = function(w, h)
 		[render.BUFFER_COLOR_BIT] = color_params,
 		[render.BUFFER_DEPTH_BIT] = depth_params
 	})
+end
+
+shadows.execute = function(pass, render_data, camera)
+	local main_light = dfp_helpers.get_main_light(render_data)
+	if main_light == nil then
+		return
+	end
+	local light_mtx_view       = dfp_helpers.get_view_matrix_from_light(main_light)
+	local light_mtx_projection = dfp_helpers.get_projection_matrix_from_light(main_light)
+
+	pass.view       = light_mtx_view
+	pass.projection = light_mtx_projection
+
+	dfp_pass.execute(pass)
+end
+
+shadows.make_pass = function(target, textures)
+	local pass     = dfp_pass.default()
+	pass.predicate = render.predicate({dfp_constants.material_keys.SCENE_PASS})
+	pass.material  = dfp_constants.material_keys.SHADOW_PASS
+	pass.execute   = shadows.execute
+	pass.target    = target
+	pass.textures  = textures
+
+	pass.pipeline.depth       = true
+	pass.pipeline.depth_mask  = true
+	pass.pipeline.depth_fn    = render.COMPARE_FUNC_LEQUAL
+	pass.pipeline.clear       = { render.BUFFER_COLOR_BIT, render.BUFFER_DEPTH_BIT }
+	pass.pipeline.clear_color = vmath.vector4(0,0,0,1)
+	pass.pipeline.clear_depth = 1
+	pass.pipeline.cull        = false
+	
+	return pass
 end
 
 shadows.pass = function(node, parent, render_data, camera)

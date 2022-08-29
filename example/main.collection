@@ -32,7 +32,7 @@ instances {
     }
     properties {
       id: "light_brightness"
-      value: "10.0"
+      value: "4.0"
       type: PROPERTY_TYPE_NUMBER
     }
   }
@@ -47,8 +47,8 @@ instances {
   prototype: "/dfp/objects/dfp_camera.go"
   position {
     x: 0.0
-    y: 0.0
-    z: 0.0
+    y: 7.0
+    z: 22.0
   }
   rotation {
     x: 0.0
@@ -60,7 +60,7 @@ instances {
     id: "dfp_camera"
     properties {
       id: "camera_clear_color"
-      value: "0.25, 0.25, 0.25, 0.0"
+      value: "0.25, 0.25, 0.25, 1.0"
       type: PROPERTY_TYPE_VECTOR4
     }
   }

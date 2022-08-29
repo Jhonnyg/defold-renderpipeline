@@ -4,6 +4,16 @@ helpers.get_rotation_from_yaw_pitch = function(yaw,pitch)
 	return vmath.quat_rotation_x(math.rad(pitch)) * vmath.quat_rotation_y(math.rad(yaw))
 end
 
+local bias_matrix = vmath.matrix4()
+bias_matrix.c0    = vmath.vector4(0.5, 0.0, 0.0, 0.0)
+bias_matrix.c1    = vmath.vector4(0.0, 0.5, 0.0, 0.0)
+bias_matrix.c2    = vmath.vector4(0.0, 0.0, 0.5, 0.0)
+bias_matrix.c3    = vmath.vector4(0.5, 0.5, 0.5, 1.0)
+
+helpers.get_bias_matrix = function()
+	return bias_matrix
+end
+
 helpers.get_main_light = function(render_data)
 	for k, v in pairs(render_data.lights) do
 		if v.is_main_light then

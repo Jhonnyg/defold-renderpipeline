@@ -146,4 +146,7 @@ pp.pass_bloom = function(node, parent, render_data, camera)
 	render.set_render_target(render.RENDER_TARGET_DEFAULT)
 end
 
+pp.pass_dof = function(node, parent, render_data, camera)
+end
+
 return pp

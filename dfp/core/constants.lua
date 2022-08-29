@@ -28,10 +28,11 @@ constants.config_keys = {
 	SHADOWS                        = 6,
 	SHADOWS_SHADOW_MAP_SIZE        = 7,
 	-- Post processing
-	POST_PROCESSING                = 8,
-	POST_PROCESSING_BLOOM          = 9,
-	POST_PROCESSING_BLOOM_STRENGTH = 10,
-	POST_PROCESSING_BLOOM_RADIUS   = 11,
+	POSTPROCESSING                 = 8,
+	POSTPROCESSING_BLOOM           = 9,
+	POSTPROCESSING_BLOOM_STRENGTH  = 10,
+	POSTPROCESSING_BLOOM_RADIUS    = 11,
+	POSTPROCESSING_DOF             = 12,
 }
 
 constants.node_keys = {
@@ -41,7 +42,8 @@ constants.node_keys = {
 	LIGHTING             = "node_lighting",
 	LIGHTING_HDR         = "node_lighting_hdr",
 	POSTPROCESSING       = "node_postprocessing",
-	POSTPROCESSING_BLOOM = "node_postprocessing_bloom"
+	POSTPROCESSING_BLOOM = "node_postprocessing_bloom",
+	POSTPROCESSING_DOF   = "node_postprocessing_dof",
 }
 
 constants.material_keys = {

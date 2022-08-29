@@ -6,6 +6,7 @@ local dfp_postprocessing = require 'dfp.core.postprocessing'
 local dfp_constants      = require 'dfp.core.constants'
 local dfp_config         = require 'dfp.core.config'
 local dfp_helpers        = require 'dfp.core.helpers'
+local dfp_pass           = require 'dfp.core.pass'
 
 local dfp_state = {
 	render_init       = false,
@@ -19,179 +20,101 @@ local dfp_state = {
 	cameras           = {},
 }
 
-local function rebuild_assets()
-	if dfp_state.config[dfp_constants.config_keys.SHADOWS] then
-		local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
-		if dfp_state.render_targets["shadow_buffer"] == nil then
-			dfp_state.render_targets["shadow_buffer"] = dfp_shadows.make_target(
-				shadow_map_size, shadow_map_size, dfp_state.config)
-		end
-	else
-		if dfp_state.render_targets["shadow_buffer"] ~= nil then
-			render.delete_render_target(dfp_state.render_targets["shadow_buffer"])
+dfp_state.rebuild = function(self)
+	local function do_target(buffer, x, y, create_fn, conditions_met)
+		if conditions_met then
+			if dfp_state.render_targets[buffer] == nil then
+				print("Creating RT " .. buffer)
+				dfp_state.render_targets[buffer] = create_fn(x, y, dfp_state.config)
+			end
+		else
+			if dfp_state.render_targets[buffer] ~= nil then
+				print("Deleting RT " .. buffer)
+				render.delete_render_target(dfp_state.render_targets[buffer])
+				dfp_state.render_targets[buffer] = nil
+			end
 		end
 	end
 
-	-- This probably needs cleaning up..
-	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] or 
-		dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
+	local do_shadow_buffer 		   = dfp_state.config[dfp_constants.config_keys.SHADOWS]
+	local do_postprocessing_buffer = dfp_state.config[dfp_constants.config_keys.POSTPROCESSING] or dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR]
+	local do_lighting_buffer 	   = do_postprocessing_buffer
+	local do_lighting_passbuffer   = dfp_state.config[dfp_constants.config_keys.POSTPROCESSING] and dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM]
+	local do_downsample_buffer     = do_lighting_passbuffer
+	
+	local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
+	local window_w        = render.get_window_width()
+	local window_h        = render.get_window_height()
+	
+	do_target("shadow_buffer",         shadow_map_size, shadow_map_size, dfp_shadows.make_target,        do_shadow_buffer)
+	do_target("postprocessing_buffer", window_w,        window_h,      	 dfp_postprocessing.make_target, do_postprocessing_buffer)
+	do_target("lighting_buffer", 	   window_w,        window_h,        dfp_lighting.make_target,       do_lighting_buffer)
+	do_target("lighting_buffer_hdr",   window_w,        window_h,        dfp_lighting.make_target_hdr,   do_lighting_buffer_hdr)
 
-		if dfp_state.render_targets["postprocessing_buffer"] == nil then
-			dfp_state.render_targets["postprocessing_buffer"] = dfp_postprocessing.make_target(
-				render.get_window_width(), render.get_window_height(), dfp_state.config)
+	local ds_w     = window_w
+	local ds_h     = window_h
+	local max_mips = 5
+	for i = 1, max_mips do
+		do_target("downsample_buffer_" .. i, ds_w, ds_h, dfp_postprocessing.make_target, do_downsample_buffer)
+		ds_w = math.ceil(ds_w / 2)
+		ds_h = math.ceil(ds_h / 2)
+		if ds_w <= 1 or ds_h <= 1 then
+			break
 		end
-			
-		if dfp_state.render_targets["lighting_buffer"] == nil then
-			dfp_state.render_targets["lighting_buffer"] = dfp_lighting.make_target(
-				render.get_window_width(), render.get_window_height(), dfp_state.config)
-		end
+	end
 
-		if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] and dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM] then
-			if dfp_state.render_targets["lighting_buffer_hdr"] == nil then
-				dfp_state.render_targets["lighting_buffer_hdr"] = dfp_lighting.make_target_hdr(
-				render.get_window_width(), render.get_window_height(), dfp_state.config)
-			end
-			
-			if dfp_state.render_targets["downsample_buffers"] == nil then
-				dfp_state.render_targets["downsample_buffers"] = {}
+	self.render_passes = {}
 
-				local rt_w     = render.get_window_width()
-				local rt_h     = render.get_window_height()
-				local max_mips = 5
-
-				for i = 1, max_mips do
-					local downsample_rt = dfp_postprocessing.make_target(rt_w, rt_h, dfp_state.config)
-					table.insert(dfp_state.render_targets["downsample_buffers"], downsample_rt)
-					rt_w = math.ceil(rt_w / 2)
-					rt_h = math.ceil(rt_h / 2)
-
-					if rt_w <= 1 or rt_h <= 1 then
-						break
-					end
+	local function do_pass(pass, pass_fn, pass_target, pass_textures, condition)
+		if condition then
+			print("Creating pass " .. pass)
+			local textures = {}
+			if pass_textures ~= nil then
+				for k, v in pairs(pass_textures) do
+					textures[k] = dfp_state.render_targets[v]
 				end
 			end
-		end
-	else
-		if dfp_state.render_targets["lighting_buffer"] ~= nil then
-			render.delete_render_target(dfp_state.render_targets["lighting_buffer"])
-			dfp_state.render_targets["lighting_buffer"] = nil
-		end
 
-		if dfp_state.render_targets["postprocessing_buffer"] ~= nil then
-			render.delete_render_target(dfp_state.render_targets["postprocessing_buffer"])
-			dfp_state.render_targets["postprocessing_buffer"] = nil
+			table.insert(self.render_passes, pass_fn(dfp_state.render_targets[pass_target], textures))
 		end
+	end
 
-		if dfp_state.render_targets["downsample_buffers"] ~= nil then
-			for k, v in pairs(dfp_state.render_targets["downsample_buffers"]) do
-				render.delete_render_target(v)
+	local do_shadow_pass   = do_shadow_buffer
+	local do_lighting_pass = dfp_state.config[dfp_constants.config_keys.LIGHTING]
+	
+	do_pass(dfp_constants.node_keys.SHADOWS, dfp_shadows.make_pass, "shadow_buffer", nil, do_shadow_buffer)
+	do_pass(dfp_constants.node_keys.LIGHTING, dfp_lighting.make_pass, "lighting_buffer", { [1] = "shadow_buffer" }, do_lighting_pass)
+end
+
+dfp_state.resize = function(self)
+	local function do_resize(target_name, w, h)
+		local rt = dfp_state.render_targets[target_name]
+		if rt ~= nil then
+			local current_w = render.get_render_target_width(rt, render.BUFFER_COLOR_BIT)
+			local current_h = render.get_render_target_height(rt, render.BUFFER_COLOR_BIT)
+			if current_w ~= w or current_h ~= h then
+				render.set_render_target_size(rt, w, h)
 			end
-			dfp_state.render_targets["downsample_buffers"] = nil
 		end
+	end
 
-		if dfp_state.render_targets["lighting_buffer_hdr"] ~= nil then
-			render.delete_render_target(dfp_state.render_targets["lighting_buffer_hdr"])
-			dfp_state.render_targets["lighting_buffer_hdr"] = nil
+	local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
+	do_resize("shadow_buffer", shadow_map_size, shadow_map_size)
+	do_resize("lighting_buffer", render.get_window_width(), render.get_window_height())
+	do_resize("postprocessing_buffer", render.get_window_width(), render.get_window_height())
+end
+
+dfp_state.render = function(self)
+	dfp_pass.begin_frame()
+	
+	for k, v in pairs(self.render_data.cameras) do
+		for pk, pv in pairs(self.render_passes) do
+			pv.execute(pv, self.render_data, v)
 		end
 	end
 end
 
-local function resize_target_if_size_changed(target, w, h)
-	local current_w = render.get_render_target_width(target, render.BUFFER_COLOR_BIT)
-	local current_h = render.get_render_target_height(target, render.BUFFER_COLOR_BIT)
-	if current_w ~= w or current_h ~= h then
-		render.set_render_target_size(target, w, h)
-	end
-end
-
-local function resize_assets()
-	if dfp_state.render_targets["shadow_buffer"] ~= nil then
-		local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
-		resize_target_if_size_changed(dfp_state.render_targets["shadow_buffer"],
-			shadow_map_size, shadow_map_size)
-	end
-
-	if dfp_state.render_targets["lighting_buffer"] ~= nil then
-		resize_target_if_size_changed(dfp_state.render_targets["lighting_buffer"],
-			render.get_window_width(), render.get_window_height())
-	end
-
-	if dfp_state.render_targets["postprocessing_buffer"] ~= nil then
-		resize_target_if_size_changed(dfp_state.render_targets["postprocessing_buffer"],
-			render.get_window_width(), render.get_window_height())
-	end
-end
-
-local function print_graph(root)
-	if root == nil then
-		return nil
-	end
-	local node = root
-	local depth = 0
-	repeat
-		local lbl = "|-"
-		for i = 0, depth do
-			lbl = " " .. lbl
-		end
-		lbl = lbl .. node.name
-
-		lbl_flags = {}
-		if not node.enabled then
-			table.insert(lbl_flags, "disabled")
-		end
-
-		if #lbl_flags > 0 then
-			lbl_flags_str = " (" .. table.concat(lbl_flags, "|") .. ")"
-			lbl = lbl .. lbl_flags_str
-		end
-		
-		depth = depth + 1
-		print(lbl)
-		node = node.output
-	until node == nil
-end
-
-local function get_node(root, node_key)
-	if root == nil then
-		return nil
-	end
-	local node = root
-	repeat
-		if node.name == node_key then
-			return node
-		end
-		node = node.output
-	until node == nil
-end
-
-local function get_node_parent(root, node_key)
-	if root == nil then
-		return nil
-	end
-	local node = root
-	local node_parent = nil
-	repeat
-		if node.name == node_key then
-			return node_parent
-		end
-		node_parent = node
-		node = node.output
-	until node == nil
-end
-
-local function set_node_enabled_flag(handle, flag)
-	if handle == nil then
-		return
-	end
-	local node = get_node(dfp_state.render_graph, handle)
-	if node ~= nil then
-		if node.enabled ~= flag then
-			print("Setting node visibility for " .. node.name .. " to " .. tostring(flag))
-			node.enabled = flag
-		end
-	end
-end
-
+--[[
 local function rebuild_graph()
 	local node_root                 = dfp_graph.node(nil, dfp_constants.node_keys.ROOT)
 	local node_framebuffer          = dfp_graph.node(nil, dfp_constants.node_keys.FRAMEBUFFER)
@@ -222,37 +145,40 @@ local function rebuild_graph()
 		node_lighting.constant_buffer = render.constant_buffer()
 		node_lighting.shadow_buffer   = dfp_state.render_targets["shadow_buffer"]
 		node_lighting.target          = dfp_state.render_targets["lighting_buffer"]
+
+		if dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
+			node_lighting_hdr 			               = dfp_graph.node(dfp_lighting.pass_hdr, dfp_constants.node_keys.LIGHTING_HDR)
+			node_lighting_hdr.constant_buffer          = render.constant_buffer()
+			node_lighting_hdr.constant_buffer.exposure = vmath.vector4(0.5,0,0,0)
+			node_lighting_hdr.predicates               = dfp_state.render_predicates.TONEMAPPING_PASS
+			node_lighting_hdr.material                 = dfp_constants.material_keys.TONEMAPPING_PASS
+			node_lighting_hdr.textures                 = { node_lighting.target }
+			node_lighting_hdr.target                   = dfp_state.render_targets["lighting_buffer_hdr"]
+		end
 	end
 
-	if dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR] then
-		node_lighting_hdr 			               = dfp_graph.node(dfp_lighting.pass_hdr, dfp_constants.node_keys.LIGHTING_HDR)
-		node_lighting_hdr.constant_buffer          = render.constant_buffer()
-		node_lighting_hdr.constant_buffer.exposure = vmath.vector4(0.5,0,0,0)
-		node_lighting_hdr.predicates               = dfp_state.render_predicates.TONEMAPPING_PASS
-		node_lighting_hdr.material                 = dfp_constants.material_keys.TONEMAPPING_PASS
-		node_lighting_hdr.textures                 = { node_lighting.target }
-		node_lighting_hdr.target                   = dfp_state.render_targets["lighting_buffer_hdr"]
-	end
-
-	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING] then
+	if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING] then
 		-- This creates a dummy node as a container for postprocessing effects to hook into
 		node_postprocessing        = dfp_graph.node(nil, dfp_constants.node_keys.POSTPROCESSING)
 		--node_postprocessing.target = dfp_state.render_targets["postprocessing_buffer"]
+
+		if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_DOF] then
+		end
 		
-		if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM] then
-			node_postprocessing_bloom                                 = dfp_graph.node(dfp_postprocessing.pass_bloom, dfp_constants.node_keys.POSTPROCESSING_BLOOM)
-			node_postprocessing_bloom.textures                        = { dfp_state.render_targets["lighting_buffer_hdr"] }
-			node_postprocessing_bloom.target                          = render.RENDER_TARGET_DEFAULT
-			node_postprocessing_bloom.constant_buffer                 = render.constant_buffer()
-			node_postprocessing_bloom.material                        = dfp_constants.material_keys.BLOOM_PASS
-			node_postprocessing_bloom.predicate                       = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
+		if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM] then
+			node_postprocessing_bloom                      = dfp_graph.node(dfp_postprocessing.pass_bloom, dfp_constants.node_keys.POSTPROCESSING_BLOOM)
+			node_postprocessing_bloom.textures             = { dfp_state.render_targets["lighting_buffer_hdr"] }
+			node_postprocessing_bloom.target               = render.RENDER_TARGET_DEFAULT
+			node_postprocessing_bloom.constant_buffer      = render.constant_buffer()
+			node_postprocessing_bloom.material             = dfp_constants.material_keys.BLOOM_PASS
+			node_postprocessing_bloom.predicate            = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
 			-- Downsampling pass
-			node_postprocessing_bloom.material_downsample             = dfp_constants.material_keys.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.predicate_downsample            = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
-			node_postprocessing_bloom.targets_downsample              = dfp_state.render_targets["downsample_buffers"]
+			node_postprocessing_bloom.material_downsample  = dfp_constants.material_keys.BLOOM_PASS_DOWNSAMPLE
+			node_postprocessing_bloom.predicate_downsample = dfp_state.render_predicates.BLOOM_PASS_DOWNSAMPLE
+			node_postprocessing_bloom.targets_downsample   = dfp_state.render_targets["downsample_buffers"]
 			-- Upsampling pass
-			node_postprocessing_bloom.material_upsample               = dfp_constants.material_keys.BLOOM_PASS_UPSAMPLE
-			node_postprocessing_bloom.predicate_upsample              = dfp_state.render_predicates.BLOOM_PASS_UPSAMPLE
+			node_postprocessing_bloom.material_upsample    = dfp_constants.material_keys.BLOOM_PASS_UPSAMPLE
+			node_postprocessing_bloom.predicate_upsample   = dfp_state.render_predicates.BLOOM_PASS_UPSAMPLE
 		end
 	end
 
@@ -277,13 +203,13 @@ local function rebuild_graph()
 		if v.textures ~= nil then
 			node_custom_pass.textures = {}
 			for _, tex_key in pairs(v.textures) do
-				local tex_node = get_node(node_root, tex_key)
+				local tex_node = dfp_graph.get_node(node_root, tex_key)
 				table.insert(node_custom_pass.textures, tex_node.target)
 			end
 		end
 
-		local before_node = get_node(node_root, desc["before"])
-		local after_node = get_node(node_root, desc["after"])
+		local before_node = dfp_graph.get_node(node_root, desc["before"])
+		local after_node = dfp_graph.get_node(node_root, desc["after"])
 
 		if before_node ~= nil and after_node_node ~= nil then
 			error("Specifying both 'before' and 'after' nodes not supported for custom passes (name: " .. desc.handle .. ")")
@@ -291,7 +217,7 @@ local function rebuild_graph()
 
 		if before_node ~= nil then
 			print("Adding custom pass " .. desc.handle .. " before " .. before_node.name)
-			local before_parent = get_node_parent(node_root, before_node.name)
+			local before_parent = dfp_graph.get_parent(node_root, before_node.name)
 			dfp_graph.set_output(before_parent, node_custom_pass)
 			dfp_graph.set_output(node_custom_pass, before_node)
 		end
@@ -304,17 +230,17 @@ local function rebuild_graph()
 		end
 	end
 
-	--print_graph(node_root)
-
 	dfp_state.render_graph = node_root
 end
+--]]
 
 local function init_render()
 	for k, v in pairs(dfp_constants.material_keys) do
 		dfp_state.render_predicates[k] = render.predicate({v})
 	end
-	
-	rebuild_assets()
+
+	dfp_state:rebuild()
+	--rebuild_assets()
 	dfp_state.render_init = true
 end
 
@@ -388,10 +314,10 @@ api.update = function()
 		table.insert(dfp_state.render_data.cameras, c)
 	end
 
-	if dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM] then
+	if dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM] then
 		local params = {}
-		params.filter_radius = dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM_RADIUS]
-		params.strength 	 = dfp_state.config[dfp_constants.config_keys.POST_PROCESSING_BLOOM_STRENGTH]
+		params.filter_radius = dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM_RADIUS]
+		params.strength 	 = dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM_STRENGTH]
 		dfp_state.render_data.postprocessing_bloom = params
 	end
 
@@ -431,15 +357,15 @@ api.add_custom_pass = function(desc)
 end
 
 api.enable_pass = function(handle)
-	set_node_enabled_flag(handle, true)
+	dfp_graph.set_enabled(graph.get_node(dfp_state.render_graph, handle), true)
 end
 
 api.disable_pass = function(handle)
-	set_node_enabled_flag(handle, false)
+	dfp_graph.set_enabled(graph.get_node(dfp_state.render_graph, handle), false)
 end
 
 api.get_node = function(node_key)
-	return get_node(dfp_state.render_graph, node_key)
+	return dfp_graph.get_node(dfp_state.render_graph, node_key)
 end
 
 api.get_camera = function(ix)
@@ -483,18 +409,12 @@ api.render = function()
 	end
 
 	if dfp_state.config_dirty then
-		rebuild_assets()
-		rebuild_graph()
+		dfp_state:rebuild()
 		dfp_state.config_dirty = false
 	end
 
-	resize_assets()
-
-	-- todo: we shouldn't do all passes for all cameras as 
-	--       the shadow map(s) are not based on cameras but on lights
-	for k, v in pairs(dfp_state.render_data.cameras) do
-		dfp_graph.execute(dfp_state.render_graph, nil, dfp_state.render_data, v)
-	end
+	dfp_state:resize()
+	dfp_state:render()
 end
 
 return api

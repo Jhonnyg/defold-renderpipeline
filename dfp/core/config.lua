@@ -10,10 +10,10 @@ config.default = function()
 		[dfp_constants.config_keys.LIGHTING_HDR]      		 	  = false,
 		[dfp_constants.config_keys.SHADOWS]                       = true,
 		[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]       = 1024,
-		[dfp_constants.config_keys.POST_PROCESSING]      		  = false,
-		[dfp_constants.config_keys.POST_PROCESSING_BLOOM]         = false,
-		[dfp_constants.config_keys.POST_PROCESSING_BLOOM_STRENGTH]= 0.4,
-		[dfp_constants.config_keys.POST_PROCESSING_BLOOM_RADIUS]  = 0.025,
+		[dfp_constants.config_keys.POSTPROCESSING]      		  = false,
+		[dfp_constants.config_keys.POSTPROCESSING_BLOOM]          = false,
+		[dfp_constants.config_keys.POSTPROCESSING_BLOOM_STRENGTH] = 0.4,
+		[dfp_constants.config_keys.POSTPROCESSING_BLOOM_RADIUS]   = 0.025,
 	}
 end
 

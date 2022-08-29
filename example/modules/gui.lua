@@ -46,17 +46,21 @@ M.on_begin = function()
 	do_configure_checkbox(config, "Shadow", dfp.config.SHADOWS)
 	do_configure_checkbox(config, "Lighting", dfp.config.LIGHTING)
 	do_configure_checkbox(config, "Lighting - HDR", dfp.config.LIGHTING_HDR)
-	do_configure_checkbox(config, "Post Processing", dfp.config.POST_PROCESSING)
-	do_configure_checkbox(config, "Post Processing - Bloom", dfp.config.POST_PROCESSING_BLOOM)
+	do_configure_checkbox(config, "Post Processing", dfp.config.POSTPROCESSING)
+	do_configure_checkbox(config, "Post Processing - Bloom", dfp.config.POSTPROCESSING_BLOOM)
 
-	do_configure_slider(config, "Bloom Radius", dfp.config.POST_PROCESSING_BLOOM_RADIUS, 0, 0.1)
-	do_configure_slider(config, "Bloom Strength", dfp.config.POST_PROCESSING_BLOOM_STRENGTH, 0, 1)
+	do_configure_slider(config, "Bloom Radius", dfp.config.POSTPROCESSING_BLOOM_RADIUS, 0, 0.1)
+	do_configure_slider(config, "Bloom Strength", dfp.config.POSTPROCESSING_BLOOM_STRENGTH, 0, 1)
 
 	do_lights()
 end
 
 M.on_end = function()
 	imgui.end_window()
+end
+
+M.input_locked = function()
+	return imgui.want_keyboard_input() or imgui.want_mouse_input() or imgui.want_text_input()
 end
 
 return M
