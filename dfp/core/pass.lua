@@ -2,21 +2,6 @@
 local pass = {}
 local current_pipeline = nil
 
---[[
-blend         = false,
-blend_src     = render.BLEND_SRC_ALPHA,
-blend_dst     = render.BLEND_ONE_MINUS_SRC_ALPHA,
-clear         = { render.BUFFER_COLOR_BIT, render.BUFFER_DEPTH_BIT, render.BUFFER_STENCIL_BIT },
-clear_color   = vmath.vector4(),
-clear_depth   = 1,
-clear_stencil = 0,
-cull          = false,
-cull_fn       = render.FACE_BACK,
-depth 	      = false,
-depth_fn      = render.COMPARE_FUNC_LESS,
-depth_mask    = false,
---]]
-
 local function needs_change(key, pipeline)
 	return pipeline[key] ~= nil and pipeline[key] ~= current_pipeline[key]
 end
@@ -108,7 +93,7 @@ pass_desc = {
 }
 --]]--
 
-pass.execute = function(pass_desc)
+pass.execute = function(pass_desc, do_print)
 	if pass_desc.target ~= nil then
 		render.set_render_target(pass_desc.target)
 	end
@@ -173,17 +158,21 @@ pass.default_pipeline = function()
 	}
 end
 
-pass.default = function()
+pass.default = function(pass_key)
 	return {
+		pass_key   = pass_key,
 		material   = nil,
 		predicate  = nil,
 		constants  = nil,
+		viewport   = nil,
 		execute    = pass.execute,
+		resize     = function() end,
+		dispose    = function() end,
 		target     = render.RENDER_TARGET_DEFAULT,
 		view       = vmath.matrix4(),
 		projection = vmath.matrix4(),
 		pipeline   = pass.default_pipeline(),
-		textures   = {}
+		textures   = {},
 	} 
 end
 
@@ -201,6 +190,22 @@ pass.make_target = function(w, h, buffers)
 		}
 	end
 	return render.render_target(target_buffers)
+end
+
+pass.dispose_target = function(rt)
+	if rt ~= nil then
+		render.delete_render_target(rt)
+	end
+end
+
+pass.resize_target = function(rt, w, h)
+	if rt ~= nil then
+		local current_w = render.get_render_target_width(rt, render.BUFFER_COLOR_BIT)
+		local current_h = render.get_render_target_height(rt, render.BUFFER_COLOR_BIT)
+		if current_w ~= w or current_h ~= h then
+			render.set_render_target_size(rt, w, h)
+		end
+	end
 end
 
 return pass

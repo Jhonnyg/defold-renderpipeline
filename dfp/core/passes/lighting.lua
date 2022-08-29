@@ -1,9 +1,11 @@
 local dfp_helpers   = require 'dfp.core.helpers'
 local dfp_constants = require 'dfp.core.constants'
 local dfp_pass      = require 'dfp.core.pass'
+local dfp_log       = require 'dfp.core.log'
 
 local lighting = {}
 
+--[[
 local function make_target(w,h, color_format, use_depth)
 	local color_params = {
 		format     = color_format,
@@ -48,22 +50,56 @@ end
 lighting.make_target_hdr = function(w, h, dfp_config)
 	return make_target(w, h, render.FORMAT_RGBA, false)
 end
+--]]
 
+lighting.dispose = function(pass)
+	dfp_log("Disposing pass lighting")
+	dfp_pass.dispose_target(pass.target)
+end
 
-lighting.make_pass = function(target, textures)
-	local pass               = dfp_pass.default()
+lighting.resize = function(pass)
+	dfp_pass.resize_target(pass.target, render.get_window_width(), render.get_window_height())
+end
+
+lighting.make_pass = function(state)
+	if not state.config[dfp_constants.config_keys.LIGHTING] then
+		return
+	end
+
+	dfp_log("Creating pass lighting")
+
+	local target = nil
+	local textures = nil
+
+	if state.config[dfp_constants.config_keys.SHADOWS] then
+		local pass_shadow = state:get_render_pass(dfp_constants.pass_keys.SHADOW)
+		textures = {[1] = pass_shadow.target}
+	end
+
+	if state.config[dfp_constants.config_keys.LIGHTING_POSTPROCESSING] or
+		state.config[dfp_constants.config_keys.LIGHTING_HDR] then
+		local target_buffers = {
+			[render.BUFFER_COLOR_BIT] = {format = render.FORMAT_RGBA32F},
+			[render.BUFFER_DEPTH_BIT] = {format = render.FORMAT_DEPTH}}
+		target = dfp_pass.make_target(render.get_window_width(), render.get_window_height(), target_buffers)
+	end
+	
+	local pass               = dfp_pass.default(dfp_constants.pass_keys.LIGHTING)
+	pass.execute             = lighting.execute
+	pass.resize              = lighting.resize
+	pass.dispose             = lighting.dispose
 	pass.constants           = render.constant_buffer()
 	pass.predicate           = render.predicate({dfp_constants.material_keys.SCENE_PASS})
 	pass.target              = target
 	pass.textures            = textures
-	pass.execute             = lighting.execute
 
 	pass.pipeline.blend      = false
 	pass.pipeline.cull       = true
 	pass.pipeline.clear      = true
 	pass.pipeline.depth      = true
 	pass.pipeline.depth_mask = true
-	return pass
+
+	state:register_render_pass(pass)
 end
 
 lighting.execute = function(pass, render_data, camera)

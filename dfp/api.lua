@@ -1,13 +1,13 @@
 
 local dfp_graph          = require 'dfp.core.graph'
-local dfp_shadows        = require 'dfp.core.shadows'
-local dfp_lighting       = require 'dfp.core.lighting'
-local dfp_lighting_hdr   = require 'dfp.core.passes.lighting_hdr'
-local dfp_postprocessing = require 'dfp.core.postprocessing'
 local dfp_constants      = require 'dfp.core.constants'
 local dfp_config         = require 'dfp.core.config'
 local dfp_helpers        = require 'dfp.core.helpers'
 local dfp_pass           = require 'dfp.core.pass'
+local dfp_shadows        = require 'dfp.core.passes.shadows'
+local dfp_lighting       = require 'dfp.core.passes.lighting'
+local dfp_lighting_hdr   = require 'dfp.core.passes.lighting_hdr'
+local dfp_postprocessing = require 'dfp.core.passes.postprocessing'
 
 local dfp_state = {
 	render_init       = false,
@@ -15,96 +15,49 @@ local dfp_state = {
 	render_targets    = {},
 	render_data       = { cameras = {}, lights = {} },
 	render_predicates = {},
+	render_passes     = {},
 	custom_passes     = {},
 	config            = dfp_config.default(),
 	lights            = {},
 	cameras           = {},
 }
 
-dfp_state.rebuild = function(self)
-	local function do_target(buffer, x, y, create_fn, conditions_met)
-		if conditions_met then
-			if dfp_state.render_targets[buffer] == nil then
-				print("Creating RT " .. buffer)
-				dfp_state.render_targets[buffer] = create_fn(x, y, dfp_state.config)
-			end
-		else
-			if dfp_state.render_targets[buffer] ~= nil then
-				print("Deleting RT " .. buffer)
-				render.delete_render_target(dfp_state.render_targets[buffer])
-				dfp_state.render_targets[buffer] = nil
-			end
-		end
+local function do_register_render_pass(pass)
+	dfp_state:register_render_pass(pass)
+end
+
+dfp_state.dispose = function(self)
+	for k, v in pairs(self.render_passes) do
+		v:dispose()
 	end
-
-	local do_shadow_buffer 		   = dfp_state.config[dfp_constants.config_keys.SHADOWS]
-	local do_postprocessing_buffer = dfp_state.config[dfp_constants.config_keys.POSTPROCESSING] or dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR]
-	local do_lighting_buffer 	   = do_postprocessing_buffer
-	local do_lighting_passbuffer   = dfp_state.config[dfp_constants.config_keys.POSTPROCESSING] and dfp_state.config[dfp_constants.config_keys.POSTPROCESSING_BLOOM]
-	local do_downsample_buffer     = do_lighting_passbuffer
-	
-	local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
-	local window_w        = render.get_window_width()
-	local window_h        = render.get_window_height()
-	
-	do_target("shadow_buffer",         shadow_map_size, shadow_map_size, dfp_shadows.make_target,        do_shadow_buffer)
-	do_target("postprocessing_buffer", window_w,        window_h,      	 dfp_postprocessing.make_target, do_postprocessing_buffer)
-	do_target("lighting_buffer", 	   window_w,        window_h,        dfp_lighting.make_target,       do_lighting_buffer)
-	do_target("lighting_buffer_hdr",   window_w,        window_h,        dfp_lighting.make_target_hdr,   do_lighting_buffer_hdr)
-
-	local ds_w     = window_w
-	local ds_h     = window_h
-	local max_mips = 5
-	for i = 1, max_mips do
-		do_target("downsample_buffer_" .. i, ds_w, ds_h, dfp_postprocessing.make_target, do_downsample_buffer)
-		ds_w = math.ceil(ds_w / 2)
-		ds_h = math.ceil(ds_h / 2)
-		if ds_w <= 1 or ds_h <= 1 then
-			break
-		end
-	end
-
 	self.render_passes = {}
+end
 
-	local function do_pass(pass, pass_fn, pass_target, pass_textures, condition)
-		if condition then
-			print("Creating pass " .. pass)
-			local textures = {}
-			if pass_textures ~= nil then
-				for k, v in pairs(pass_textures) do
-					textures[k] = dfp_state.render_targets[v]
-				end
-			end
-
-			table.insert(self.render_passes, pass_fn(dfp_state.render_targets[pass_target], textures))
+dfp_state.get_render_pass = function(self, pass_key)
+	for k, v in pairs(self.render_passes) do
+		if v.pass_key == pass_key then
+			return v
 		end
 	end
+end
 
-	local do_shadow_pass       = do_shadow_buffer
-	local do_lighting_pass     = dfp_state.config[dfp_constants.config_keys.LIGHTING]
-	local do_lighting_hdr_pass = do_lighting_pass and dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR]
+dfp_state.rebuild = function(self)
+	dfp_state:dispose()
+	dfp_shadows.make_pass(dfp_state)
+	dfp_lighting.make_pass(dfp_state)
+	dfp_lighting_hdr.make_pass(dfp_state)
+	dfp_postprocessing.make_pass(dfp_state)
 	
-	do_pass(dfp_constants.node_keys.SHADOWS,      dfp_shadows.make_pass,      "shadow_buffer", nil, do_shadow_buffer)
-	do_pass(dfp_constants.node_keys.LIGHTING,     dfp_lighting.make_pass,     "lighting_buffer", { [1] = "shadow_buffer" }, do_lighting_pass)
-	do_pass(dfp_constants.node_keys.LIGHTING_HDR, dfp_lighting_hdr.make_pass, "lighting_buffer_hdr", { [0] = "lighting_buffer" }, do_lighting_hdr_pass)
+end
+
+dfp_state.register_render_pass = function(self, pass)
+	table.insert(self.render_passes, pass)
 end
 
 dfp_state.resize = function(self)
-	local function do_resize(target_name, w, h)
-		local rt = dfp_state.render_targets[target_name]
-		if rt ~= nil then
-			local current_w = render.get_render_target_width(rt, render.BUFFER_COLOR_BIT)
-			local current_h = render.get_render_target_height(rt, render.BUFFER_COLOR_BIT)
-			if current_w ~= w or current_h ~= h then
-				render.set_render_target_size(rt, w, h)
-			end
-		end
+	for k, v in pairs(self.render_passes) do
+		v:resize()
 	end
-
-	local shadow_map_size = dfp_state.config[dfp_constants.config_keys.SHADOWS_SHADOW_MAP_SIZE]
-	do_resize("shadow_buffer", shadow_map_size, shadow_map_size)
-	do_resize("lighting_buffer", render.get_window_width(), render.get_window_height())
-	do_resize("postprocessing_buffer", render.get_window_width(), render.get_window_height())
 end
 
 dfp_state.render = function(self)
@@ -243,7 +196,6 @@ local function init_render()
 	end
 
 	dfp_state:rebuild()
-	--rebuild_assets()
 	dfp_state.render_init = true
 end
 
@@ -260,7 +212,7 @@ api.__register_camera = function(cmp)
 	table.insert(dfp_state.cameras, cmp)
 end
 
-api.node_keys = dfp_constants.node_keys
+api.pass_keys = dfp_constants.pass_keys
 api.config    = dfp_constants.config_keys
 
 api.configure = function(tbl)

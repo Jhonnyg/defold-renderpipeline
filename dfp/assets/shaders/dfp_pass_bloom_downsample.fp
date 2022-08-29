@@ -59,4 +59,6 @@ void main()
 	vec4 middle_sample = texture2D(tex_lighting, var_texcoord0);
 	lowp vec3 color = get_downsampled_color(tex_lighting, tex_resolution.st, var_texcoord0, middle_sample.rgb);
 	gl_FragColor = vec4(color * middle_sample.a, 1.0);
+
+	gl_FragColor = vec4(var_texcoord0, 0.0, 1.0);
 }

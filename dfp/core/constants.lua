@@ -36,15 +36,12 @@ constants.config_keys = {
 	POSTPROCESSING_DOF             = 12,
 }
 
-constants.node_keys = {
-	ROOT                 = "node_root",
-	FRAMEBUFFER          = "node_framebuffer",
-	SHADOWS              = "node_shadows",
-	LIGHTING             = "node_lighting",
-	LIGHTING_HDR         = "node_lighting_hdr",
-	POSTPROCESSING       = "node_postprocessing",
-	POSTPROCESSING_BLOOM = "node_postprocessing_bloom",
-	POSTPROCESSING_DOF   = "node_postprocessing_dof",
+constants.pass_keys = {
+	SHADOWS              = "pass_shadows",
+	LIGHTING             = "pass_lighting",
+	LIGHTING_HDR         = "pass_lighting_hdr",
+	POSTPROCESSING_BLOOM = "pass_postprocessing_bloom",
+	POSTPROCESSING_DOF   = "pass_postprocessing_dof",
 }
 
 constants.material_keys = {

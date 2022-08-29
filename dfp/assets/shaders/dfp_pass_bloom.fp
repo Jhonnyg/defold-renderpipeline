@@ -11,4 +11,6 @@ void main()
 	lowp vec4 color_composite  = mix(color_sample, color_downsample, bloom_strength);
 	
 	gl_FragColor = vec4(color_composite.rgb,1.0);
+
+	gl_FragColor = vec4(1.0);
 }
