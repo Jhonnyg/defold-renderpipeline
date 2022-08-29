@@ -112,6 +112,7 @@ lighting.execute = function(pass, render_data, camera)
 	dfp_pass.execute(pass)
 end
 
+--[[
 lighting.pass = function(node, parent, render_data, camera)
 
 	local window_w = render.get_window_width()
@@ -198,5 +199,6 @@ lighting.pass_hdr = function(node, parent, render_data, camera)
 
 	render.set_render_target(render.RENDER_TARGET_DEFAULT)
 end
+--]]
 
 return lighting

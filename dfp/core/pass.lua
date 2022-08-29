@@ -187,4 +187,20 @@ pass.default = function()
 	} 
 end
 
+pass.make_target = function(w, h, buffers)
+	local target_buffers = {}
+	for k, v in pairs(buffers) do
+		target_buffers[k] = {
+			format     = v.format,
+			width      = w,
+			height     = h,
+			min_filter = render.FILTER_LINEAR,
+			mag_filter = render.FILTER_LINEAR,
+			u_wrap     = render.WRAP_CLAMP_TO_EDGE,
+			v_wrap     = render.WRAP_CLAMP_TO_EDGE
+		}
+	end
+	return render.render_target(target_buffers)
+end
+
 return pass

@@ -16,6 +16,7 @@ constants.PROPERTY_CAMERA_CLEAR         = "camera_clear"
 constants.PROPERTY_CAMERA_CLEAR_COLOR   = "camera_clear_color"
 constants.PROPERTY_CAMERA_CLEAR_DEPTH   = "camera_clear_depth"
 constants.PROPERTY_CAMERA_CLEAR_STENCIL = "camera_clear_stencil"
+constants.PROPERTY_CAMERA_EXPOSURE      = "camera_exposure"
 
 constants.config_keys = {
 	NONE                           = 0,

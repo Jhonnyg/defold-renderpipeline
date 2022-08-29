@@ -52,18 +52,25 @@ shadows.make_pass = function(target, textures)
 	pass.execute   = shadows.execute
 	pass.target    = target
 	pass.textures  = textures
+	pass.viewport  = vmath.vector4(0, 0,
+		render.get_render_target_width(target, render.BUFFER_COLOR0_BIT),
+		render.get_render_target_height(target, render.BUFFER_COLOR0_BIT))
 
 	pass.pipeline.depth       = true
 	pass.pipeline.depth_mask  = true
 	pass.pipeline.depth_fn    = render.COMPARE_FUNC_LEQUAL
-	pass.pipeline.clear       = { render.BUFFER_COLOR_BIT, render.BUFFER_DEPTH_BIT }
-	pass.pipeline.clear_color = vmath.vector4(0,0,0,1)
-	pass.pipeline.clear_depth = 1
 	pass.pipeline.cull        = false
+	pass.pipeline.blend       = false
+	pass.pipeline.clear       = true
+	pass.pipeline.clear_table = {
+		[render.BUFFER_COLOR_BIT] = vmath.vector4(0,0,0,1),
+		[render.BUFFER_DEPTH_BIT] = 1
+	}
 	
 	return pass
 end
 
+--[[
 shadows.pass = function(node, parent, render_data, camera)
 	local main_light = dfp_helpers.get_main_light(render_data)
 	if main_light == nil then
@@ -93,5 +100,6 @@ shadows.pass = function(node, parent, render_data, camera)
 	render.disable_material()
 	render.set_render_target(render.RENDER_TARGET_DEFAULT)
 end
+--]]
 
 return shadows

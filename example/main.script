@@ -7,7 +7,7 @@ function init(self)
 
 	-- Configure pipeline with high-level features
 	self.dfp_configuration 									   = dfp.get_config_default()
-	self.dfp_configuration[dfp.config.LIGHTING_HDR]            = false
+	self.dfp_configuration[dfp.config.LIGHTING_HDR]            = true
 	self.dfp_configuration[dfp.config.POSTPROCESSING]          = false
 	self.dfp_configuration[dfp.config.POSTPROCESSING_BLOOM]    = false
 	self.dfp_configuration[dfp.config.SHADOWS]                 = true

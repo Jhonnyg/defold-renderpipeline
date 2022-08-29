@@ -2,6 +2,7 @@
 local dfp_graph          = require 'dfp.core.graph'
 local dfp_shadows        = require 'dfp.core.shadows'
 local dfp_lighting       = require 'dfp.core.lighting'
+local dfp_lighting_hdr   = require 'dfp.core.passes.lighting_hdr'
 local dfp_postprocessing = require 'dfp.core.postprocessing'
 local dfp_constants      = require 'dfp.core.constants'
 local dfp_config         = require 'dfp.core.config'
@@ -79,11 +80,13 @@ dfp_state.rebuild = function(self)
 		end
 	end
 
-	local do_shadow_pass   = do_shadow_buffer
-	local do_lighting_pass = dfp_state.config[dfp_constants.config_keys.LIGHTING]
+	local do_shadow_pass       = do_shadow_buffer
+	local do_lighting_pass     = dfp_state.config[dfp_constants.config_keys.LIGHTING]
+	local do_lighting_hdr_pass = do_lighting_pass and dfp_state.config[dfp_constants.config_keys.LIGHTING_HDR]
 	
-	do_pass(dfp_constants.node_keys.SHADOWS, dfp_shadows.make_pass, "shadow_buffer", nil, do_shadow_buffer)
-	do_pass(dfp_constants.node_keys.LIGHTING, dfp_lighting.make_pass, "lighting_buffer", { [1] = "shadow_buffer" }, do_lighting_pass)
+	do_pass(dfp_constants.node_keys.SHADOWS,      dfp_shadows.make_pass,      "shadow_buffer", nil, do_shadow_buffer)
+	do_pass(dfp_constants.node_keys.LIGHTING,     dfp_lighting.make_pass,     "lighting_buffer", { [1] = "shadow_buffer" }, do_lighting_pass)
+	do_pass(dfp_constants.node_keys.LIGHTING_HDR, dfp_lighting_hdr.make_pass, "lighting_buffer_hdr", { [0] = "lighting_buffer" }, do_lighting_hdr_pass)
 end
 
 dfp_state.resize = function(self)
@@ -283,8 +286,6 @@ api.update = function()
 		local c          = {}
 		local c_url      = msg.url(nil, v, "dfp_camera")
 		local c_fov      = go.get(c_url, dfp_constants.PROPERTY_CAMERA_FOV)
-		local c_near     = go.get(c_url, dfp_constants.PROPERTY_CAMERA_NEAR)
-		local c_far      = go.get(c_url, dfp_constants.PROPERTY_CAMERA_FAR)
 		local c_viewport = go.get(c_url, dfp_constants.PROPERTY_CAMERA_VIEWPORT)
 		local c_clear    = go.get(c_url, dfp_constants.PROPERTY_CAMERA_CLEAR)
 		local c_clear_c  = go.get(c_url, dfp_constants.PROPERTY_CAMERA_CLEAR_COLOR)
@@ -303,8 +304,9 @@ api.update = function()
 		c.clear_depth   = c_clear_d
 		c.clear_stencil = c_clear_s
 		c.fov           = c_fov
-		c.near          = c_near
-		c.far           = c_far
+		c.near          = go.get(c_url, dfp_constants.PROPERTY_CAMERA_NEAR)
+		c.far           = go.get(c_url, dfp_constants.PROPERTY_CAMERA_FAR)
+		c.exposure      = go.get(c_url, dfp_constants.PROPERTY_CAMERA_EXPOSURE)
 		--c.view          = vmath.inv(vmath.matrix4_from_quat(c_rot) * vmath.matrix4_translation(c_pos))
 		c.projection    = vmath.matrix4()
 
@@ -378,6 +380,20 @@ end
 
 api.get_light_count = function()
 	return #dfp_state.lights
+end
+
+api.get_camera_count = function()
+	return #dfp_state.cameras
+end
+
+api.set_camera_exposure = function(l, exposure)
+	local c_url = msg.url(nil, l, "dfp_camera")
+	go.set(c_url, dfp_constants.PROPERTY_CAMERA_EXPOSURE, exposure)
+end
+
+api.get_camera_exposure = function(l)
+	local c_url = msg.url(nil, l, "dfp_camera")
+	return go.get(c_url, dfp_constants.PROPERTY_CAMERA_EXPOSURE)
 end
 
 api.set_light_brightness = function(l, brightness)

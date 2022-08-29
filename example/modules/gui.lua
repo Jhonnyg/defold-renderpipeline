@@ -27,12 +27,24 @@ end
 
 local function do_lights()
 	for i = 0, dfp.get_light_count()-1 do
-		imgui.text("Light " .. i)	
-		local light      = dfp.get_light(i)	
+		imgui.text("Light " .. i)
+		local light      = dfp.get_light(i)
 		local brightness = dfp.get_light_brightness(light)
 		local changed, v = imgui.slider_float("Brightness", brightness, 0, 100, 3)
 		if changed then
 			dfp.set_light_brightness(light, v)
+		end
+	end
+end
+
+local function do_cameras()
+	for i = 0, dfp.get_camera_count()-1 do
+		imgui.text("Camea " .. i)
+		local camera     = dfp.get_camera(i)
+		local exposure   = dfp.get_camera_exposure(camera)
+		local changed, v = imgui.slider_float("Exposure", exposure, -2, 2, 3)
+		if changed then
+			dfp.set_camera_exposure(camera, v)
 		end
 	end
 end
@@ -52,6 +64,7 @@ M.on_begin = function()
 	do_configure_slider(config, "Bloom Radius", dfp.config.POSTPROCESSING_BLOOM_RADIUS, 0, 0.1)
 	do_configure_slider(config, "Bloom Strength", dfp.config.POSTPROCESSING_BLOOM_STRENGTH, 0, 1)
 
+	do_cameras()
 	do_lights()
 end
 
