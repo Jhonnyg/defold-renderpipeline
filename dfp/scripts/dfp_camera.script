@@ -8,6 +8,7 @@ go.property("camera_clear", true)
 go.property("camera_clear_color", vmath.vector4())
 go.property("camera_clear_depth", 1)
 go.property("camera_clear_stencil", 0)
+go.property("camera_exposure", 1)
 
 function init(self)
 	dfp.__register_camera(go.get_id())

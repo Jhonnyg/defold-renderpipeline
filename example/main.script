@@ -8,11 +8,12 @@ function init(self)
 	-- Configure pipeline with high-level features
 	self.dfp_configuration 									   = dfp.get_config_default()
 	self.dfp_configuration[dfp.config.LIGHTING_HDR]            = true
-	self.dfp_configuration[dfp.config.POST_PROCESSING]         = true
-	self.dfp_configuration[dfp.config.POST_PROCESSING_BLOOM]   = true
+	self.dfp_configuration[dfp.config.POSTPROCESSING]          = true
+	self.dfp_configuration[dfp.config.POSTPROCESSING_BLOOM]    = true
 	self.dfp_configuration[dfp.config.SHADOWS]                 = true
 	self.dfp_configuration[dfp.config.SHADOWS_SHADOW_MAP_SIZE] = 2048
 
+	--[[
 	-- Create a custom debug pass
 	self.pass_shadows_debug = dfp.add_custom_pass({
 		enabled   = false,
@@ -23,6 +24,7 @@ function init(self)
 			dfp.node_keys.SHADOWS
 		}
 	})
+	--]]
 
 	dfp.configure(self.dfp_configuration)
 
@@ -43,6 +45,10 @@ function on_reload(self)
 end
 
 function on_input(self, action_id, action)
+	if example_gui.input_locked() then
+		return
+	end
+	
 	if action_id == hash("key_w") then
 		example_camera.move_forward(self.camera)
 	elseif action_id == hash("key_s") then

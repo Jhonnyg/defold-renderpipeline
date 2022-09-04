@@ -16,6 +16,7 @@ constants.PROPERTY_CAMERA_CLEAR         = "camera_clear"
 constants.PROPERTY_CAMERA_CLEAR_COLOR   = "camera_clear_color"
 constants.PROPERTY_CAMERA_CLEAR_DEPTH   = "camera_clear_depth"
 constants.PROPERTY_CAMERA_CLEAR_STENCIL = "camera_clear_stencil"
+constants.PROPERTY_CAMERA_EXPOSURE      = "camera_exposure"
 
 constants.config_keys = {
 	NONE                           = 0,
@@ -28,20 +29,19 @@ constants.config_keys = {
 	SHADOWS                        = 6,
 	SHADOWS_SHADOW_MAP_SIZE        = 7,
 	-- Post processing
-	POST_PROCESSING                = 8,
-	POST_PROCESSING_BLOOM          = 9,
-	POST_PROCESSING_BLOOM_STRENGTH = 10,
-	POST_PROCESSING_BLOOM_RADIUS   = 11,
+	POSTPROCESSING                 = 8,
+	POSTPROCESSING_BLOOM           = 9,
+	POSTPROCESSING_BLOOM_STRENGTH  = 10,
+	POSTPROCESSING_BLOOM_RADIUS    = 11,
+	POSTPROCESSING_DOF             = 12,
 }
 
-constants.node_keys = {
-	ROOT                 = "node_root",
-	FRAMEBUFFER          = "node_framebuffer",
-	SHADOWS              = "node_shadows",
-	LIGHTING             = "node_lighting",
-	LIGHTING_HDR         = "node_lighting_hdr",
-	POSTPROCESSING       = "node_postprocessing",
-	POSTPROCESSING_BLOOM = "node_postprocessing_bloom"
+constants.pass_keys = {
+	SHADOWS              = "pass_shadows",
+	LIGHTING             = "pass_lighting",
+	LIGHTING_HDR         = "pass_lighting_hdr",
+	POSTPROCESSING_BLOOM = "pass_postprocessing_bloom",
+	POSTPROCESSING_DOF   = "pass_postprocessing_dof",
 }
 
 constants.material_keys = {

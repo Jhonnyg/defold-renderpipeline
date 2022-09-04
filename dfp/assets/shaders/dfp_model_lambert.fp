@@ -59,5 +59,6 @@ void main()
     vec3 final_color       = albedo.rgb * light0_color  * occlusion;
     float final_brightness = get_brightness_treshold(final_color);
     gl_FragColor           = vec4(final_color, final_brightness);
+    //gl_FragColor           = vec4(light0_color, 1.0);
 }
 
